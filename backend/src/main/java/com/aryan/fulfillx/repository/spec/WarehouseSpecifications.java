@@ -24,6 +24,12 @@ public final class WarehouseSpecifications {
 
             List<Predicate> predicates = new ArrayList<>();
 
+            if (StringUtils.hasText(filter.getName())) {
+                predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("name")),
+                        "%" + filter.getName().trim().toLowerCase() + "%"));
+            }
+
             if (StringUtils.hasText(filter.getCity())) {
                 predicates.add(criteriaBuilder.like(
                         criteriaBuilder.lower(root.get("city")),

@@ -19,4 +19,7 @@ public class InventoryFilterRequest {
 
     @Schema(description = "Filter by warehouse ID", example = OpenApiExamples.WAREHOUSE_ID)
     private UUID warehouseId;
+
+    @Schema(description = "Search by product name, SKU, or warehouse name (case-insensitive partial match)", example = "mouse")
+    private String search;
 }

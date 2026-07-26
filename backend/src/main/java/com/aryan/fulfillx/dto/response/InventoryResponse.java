@@ -17,9 +17,13 @@ public class InventoryResponse {
 
     private UUID id;
     private UUID warehouseId;
+    private String warehouseName;
     private UUID productId;
+    private String productName;
+    private String sku;
     private Integer availableQuantity;
     private Integer reservedQuantity;
+    private Boolean lowStock;
     private Instant createdAt;
     private Instant updatedAt;
 }

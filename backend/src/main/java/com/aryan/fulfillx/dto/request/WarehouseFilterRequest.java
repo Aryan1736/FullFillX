@@ -12,6 +12,10 @@ import lombok.Setter;
 @Schema(description = "Warehouse list filters")
 public class WarehouseFilterRequest {
 
+    @Size(max = 255)
+    @Schema(description = "Filter by warehouse name (case-insensitive partial match)", example = "Kolkata")
+    private String name;
+
     @Size(max = 100)
     @Schema(description = "Filter by city (case-insensitive partial match)", example = "Kolkata")
     private String city;

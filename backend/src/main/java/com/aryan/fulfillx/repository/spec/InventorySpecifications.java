@@ -3,9 +3,12 @@ package com.aryan.fulfillx.repository.spec;
 import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.request.InventoryFilterRequest;
 import com.aryan.fulfillx.entity.Inventory;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.util.StringUtils;
 
 public final class InventorySpecifications {
 
@@ -18,7 +21,13 @@ public final class InventorySpecifications {
                 return criteriaBuilder.conjunction();
             }
 
-            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            root.fetch("warehouse", JoinType.LEFT);
+            root.fetch("product", JoinType.LEFT);
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            List<Predicate> predicates = new ArrayList<>();
 
             if (Boolean.TRUE.equals(filter.getLowStock())) {
                 predicates.add(criteriaBuilder.greaterThan(root.get("availableQuantity"), 0));
@@ -34,7 +43,15 @@ public final class InventorySpecifications {
                 predicates.add(criteriaBuilder.equal(root.get("warehouse").get("id"), filter.getWarehouseId()));
             }
 
-            return criteriaBuilder.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+            if (StringUtils.hasText(filter.getSearch())) {
+                String searchPattern = "%" + filter.getSearch().trim().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("name")), searchPattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("category")), searchPattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("warehouse").get("name")), searchPattern)));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
     }
 }

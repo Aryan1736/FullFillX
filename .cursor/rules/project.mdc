@@ -1,0 +1,51 @@
+---
+description: FulfillX Engineering Rules
+alwaysApply: true
+---
+
+This is a production-quality backend.
+
+Rules:
+
+- Java 21
+- Spring Boot 3
+- Maven
+- PostgreSQL
+
+Architecture:
+
+Controller
+↓
+
+Service
+↓
+
+Repository
+
+Optimization Engine must remain independent from Spring.
+
+Always:
+
+- Constructor Injection
+- DTO Pattern
+- Validation
+- Global Exception Handler
+- Small methods
+- Small classes
+- SOLID
+- DRY
+
+Never:
+
+- Field Injection
+- God Classes
+- Business Logic inside Controllers
+- Expose Entities
+
+Prefer:
+
+- Composition over inheritance
+- Interface-based design
+- Immutable DTOs where practical
+
+Only generate files explicitly requested.

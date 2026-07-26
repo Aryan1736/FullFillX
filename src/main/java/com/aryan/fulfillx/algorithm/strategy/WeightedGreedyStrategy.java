@@ -8,6 +8,8 @@ import com.aryan.fulfillx.algorithm.model.OptimizationRequest;
 import com.aryan.fulfillx.algorithm.model.OptimizationRequest.OrderLine;
 import com.aryan.fulfillx.algorithm.model.OptimizationRequest.WarehouseAvailability;
 import com.aryan.fulfillx.algorithm.model.OptimizationResult;
+import com.aryan.fulfillx.algorithm.model.PlanScoreBreakdown;
+import com.aryan.fulfillx.algorithm.model.ReasoningCollector;
 import com.aryan.fulfillx.algorithm.model.ScoreBreakdown;
 import com.aryan.fulfillx.algorithm.model.WarehouseCandidate;
 import java.math.BigDecimal;
@@ -62,28 +64,49 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
     public OptimizationResult optimize(OptimizationRequest request) {
         Objects.requireNonNull(request, "request must not be null");
 
-        List<WarehouseAvailability> eligibleWarehouses = filterEligibleWarehouses(request);
-        if (eligibleWarehouses.isEmpty() || !isCollectivelyFulfillable(eligibleWarehouses, request.getOrderLines())) {
-            return emptyResult();
+        ReasoningCollector reasoning = new ReasoningCollector();
+        List<WarehouseAvailability> eligibleWarehouses = filterEligibleWarehouses(request, reasoning);
+        if (eligibleWarehouses.isEmpty()) {
+            reasoning.addInfo("No warehouses can fulfill any requested product.");
+            return emptyResult(reasoning);
+        }
+        if (!isCollectivelyFulfillable(eligibleWarehouses, request.getOrderLines())) {
+            reasoning.addInfo("Requested quantities exceed collective inventory across eligible warehouses.");
+            return emptyResult(reasoning);
         }
 
-        List<AllocationPlan> candidatePlans = buildCandidatePlans(request, eligibleWarehouses);
+        List<AllocationPlan> candidatePlans = buildCandidatePlans(request, eligibleWarehouses, reasoning);
         if (candidatePlans.isEmpty()) {
-            return emptyResult();
+            reasoning.addInfo("No feasible allocation plans could be constructed.");
+            return emptyResult(reasoning);
         }
 
-        ScoredPlan bestPlan = candidatePlans.stream()
+        List<ScoredPlan> scoredPlans = candidatePlans.stream()
                 .map(plan -> scorePlan(plan, request, eligibleWarehouses))
+                .toList();
+        ScoredPlan bestPlan = scoredPlans.stream()
                 .min(Comparator.comparing(ScoredPlan::score))
                 .orElseThrow();
+        recordPlanSelectionReasoning(scoredPlans, bestPlan, reasoning);
 
-        return toOptimizationResult(bestPlan, request, eligibleWarehouses);
+        return toOptimizationResult(bestPlan, request, eligibleWarehouses, reasoning, scoredPlans);
     }
 
-    private List<WarehouseAvailability> filterEligibleWarehouses(OptimizationRequest request) {
-        return request.getWarehouseAvailabilities().stream()
-                .filter(warehouse -> canFulfillAnyRequestedProduct(warehouse, request.getOrderLines()))
-                .toList();
+    private List<WarehouseAvailability> filterEligibleWarehouses(
+            OptimizationRequest request, ReasoningCollector reasoning) {
+        List<WarehouseAvailability> eligibleWarehouses = new ArrayList<>();
+
+        for (WarehouseAvailability warehouse : request.getWarehouseAvailabilities()) {
+            if (canFulfillAnyRequestedProduct(warehouse, request.getOrderLines())) {
+                eligibleWarehouses.add(warehouse);
+            } else {
+                reasoning.addFiltered(
+                        warehouse,
+                        "Excluded because no requested product has available stock at this warehouse.");
+            }
+        }
+
+        return eligibleWarehouses;
     }
 
     private boolean canFulfillAnyRequestedProduct(WarehouseAvailability warehouse, List<OrderLine> orderLines) {
@@ -104,16 +127,24 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
     }
 
     private List<AllocationPlan> buildCandidatePlans(
-            OptimizationRequest request, List<WarehouseAvailability> eligibleWarehouses) {
+            OptimizationRequest request,
+            List<WarehouseAvailability> eligibleWarehouses,
+            ReasoningCollector reasoning) {
         List<AllocationPlan> candidatePlans = new ArrayList<>();
 
         for (WarehouseAvailability warehouse : eligibleWarehouses) {
             if (canFulfillEntireOrder(warehouse, request.getOrderLines())) {
                 candidatePlans.add(buildSingleWarehousePlan(warehouse, request.getOrderLines()));
+                reasoning.addInfo(String.format(
+                        "Single-warehouse plan candidate added for %s because it can fulfill the entire order.",
+                        warehouse.warehouseName()));
             }
         }
 
-        buildGreedySplitPlan(request, eligibleWarehouses).ifPresent(candidatePlans::add);
+        buildGreedySplitPlan(request, eligibleWarehouses, reasoning).ifPresent(plan -> {
+            candidatePlans.add(plan);
+            reasoning.addInfo("Split-shipment plan candidate added to cover remaining multi-warehouse allocations.");
+        });
 
         return candidatePlans;
     }
@@ -136,7 +167,9 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
     }
 
     private Optional<AllocationPlan> buildGreedySplitPlan(
-            OptimizationRequest request, List<WarehouseAvailability> eligibleWarehouses) {
+            OptimizationRequest request,
+            List<WarehouseAvailability> eligibleWarehouses,
+            ReasoningCollector reasoning) {
         Map<UUID, Map<UUID, Integer>> remainingStockByWarehouseId = copyStockSnapshot(eligibleWarehouses);
         AllocationPlanBuilder planBuilder = new AllocationPlanBuilder();
 
@@ -149,7 +182,8 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
                                 remainingQuantity,
                                 remainingStockByWarehouseId,
                                 eligibleWarehouses,
-                                request)
+                                request,
+                                reasoning)
                         .orElse(null);
 
                 if (selectedWarehouse == null) {
@@ -180,21 +214,57 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
             int requestedQuantity,
             Map<UUID, Map<UUID, Integer>> remainingStockByWarehouseId,
             List<WarehouseAvailability> eligibleWarehouses,
-            OptimizationRequest request) {
-        return eligibleWarehouses.stream()
-                .filter(warehouse -> remainingStockByWarehouseId
-                                .getOrDefault(warehouse.warehouseId(), Map.of())
-                                .getOrDefault(productId, 0)
-                        > 0)
-                .min(Comparator.comparing(warehouse -> greedySelectionScore(
-                        warehouse,
+            OptimizationRequest request,
+            ReasoningCollector reasoning) {
+        List<ScoredWarehouseLeg> candidateLegs = new ArrayList<>();
+
+        for (WarehouseAvailability warehouse : eligibleWarehouses) {
+            int availableQuantity = remainingStockByWarehouseId
+                    .getOrDefault(warehouse.warehouseId(), Map.of())
+                    .getOrDefault(productId, 0);
+            if (availableQuantity <= 0) {
+                continue;
+            }
+
+            int allocationQuantity = Math.min(requestedQuantity, availableQuantity);
+            BigDecimal legScore = greedySelectionScore(warehouse, productId, allocationQuantity, request);
+            candidateLegs.add(new ScoredWarehouseLeg(warehouse, allocationQuantity, legScore));
+        }
+
+        if (candidateLegs.isEmpty()) {
+            return Optional.empty();
+        }
+
+        ScoredWarehouseLeg bestLeg = candidateLegs.stream()
+                .min(Comparator.comparing(ScoredWarehouseLeg::score))
+                .orElseThrow();
+
+        for (ScoredWarehouseLeg candidateLeg : candidateLegs) {
+            WarehouseAvailability warehouse = candidateLeg.warehouse();
+            if (candidateLeg == bestLeg) {
+                reasoning.addSelected(
+                        warehouse.warehouseId(),
+                        warehouse.warehouseName(),
                         productId,
-                        Math.min(
-                                requestedQuantity,
-                                remainingStockByWarehouseId
-                                        .get(warehouse.warehouseId())
-                                        .getOrDefault(productId, 0)),
-                        request)));
+                        String.format(
+                                "Allocated %d unit(s): leg score %.4f is lowest among %d candidate warehouse(s).",
+                                candidateLeg.allocationQuantity(),
+                                candidateLeg.score(),
+                                candidateLegs.size()));
+            } else {
+                reasoning.addRejected(
+                        warehouse.warehouseId(),
+                        warehouse.warehouseName(),
+                        productId,
+                        String.format(
+                                "Leg score %.4f exceeds selected warehouse score %.4f for %d unit(s).",
+                                candidateLeg.score(),
+                                bestLeg.score(),
+                                candidateLeg.allocationQuantity()));
+            }
+        }
+
+        return Optional.of(bestLeg.warehouse());
     }
 
     private BigDecimal greedySelectionScore(
@@ -232,7 +302,7 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
             totalWarehouseLoadPenalty = totalWarehouseLoadPenalty.add(warehouseLoadPenalty);
         }
 
-        BigDecimal score = scoreCalculator.scorePlan(
+        PlanScoreBreakdown scoreBreakdown = scoreCalculator.scorePlanBreakdown(
                 totalShippingCost,
                 maxEstimatedDeliveryHours,
                 totalWarehouseLoadPenalty,
@@ -240,10 +310,47 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
 
         return new ScoredPlan(
                 plan,
-                score,
+                scoreBreakdown.getTotalScore(),
+                scoreBreakdown,
                 totalShippingCost,
                 maxEstimatedDeliveryHours,
                 totalWarehouseLoadPenalty);
+    }
+
+    private void recordPlanSelectionReasoning(
+            List<ScoredPlan> scoredPlans, ScoredPlan bestPlan, ReasoningCollector reasoning) {
+        String bestPlanDescription = describePlan(bestPlan.plan());
+
+        for (ScoredPlan scoredPlan : scoredPlans) {
+            if (scoredPlan == bestPlan) {
+                reasoning.addSelected(
+                        null,
+                        null,
+                        null,
+                        String.format(
+                                "Selected fulfillment plan (%s) with optimization score %.4f.",
+                                bestPlanDescription,
+                                scoredPlan.score()));
+            } else {
+                reasoning.addRejected(
+                        null,
+                        null,
+                        null,
+                        String.format(
+                                "Rejected fulfillment plan (%s): score %.4f exceeds winning score %.4f.",
+                                describePlan(scoredPlan.plan()),
+                                scoredPlan.score(),
+                                bestPlan.score()));
+            }
+        }
+    }
+
+    private String describePlan(AllocationPlan plan) {
+        if (plan.warehouseCount() == 1) {
+            UUID warehouseId = plan.allocationsByWarehouseId().keySet().iterator().next();
+            return "single warehouse " + warehouseId;
+        }
+        return plan.warehouseCount() + " warehouses";
     }
 
     private BigDecimal computeShippingCost(
@@ -278,15 +385,20 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
     private OptimizationResult toOptimizationResult(
             ScoredPlan bestPlan,
             OptimizationRequest request,
-            List<WarehouseAvailability> eligibleWarehouses) {
+            List<WarehouseAvailability> eligibleWarehouses,
+            ReasoningCollector reasoning,
+            List<ScoredPlan> scoredPlans) {
         Map<UUID, WarehouseAvailability> warehousesById = indexWarehousesById(eligibleWarehouses);
         List<WarehouseCandidate> warehouseCandidates = new ArrayList<>();
+        List<UUID> selectedWarehouses = new ArrayList<>();
 
         for (Map.Entry<UUID, Map<UUID, Integer>> warehouseAllocation :
                 bestPlan.plan().allocationsByWarehouseId().entrySet()) {
-            WarehouseAvailability warehouse = warehousesById.get(warehouseAllocation.getKey());
+            UUID warehouseId = warehouseAllocation.getKey();
+            WarehouseAvailability warehouse = warehousesById.get(warehouseId);
             warehouseCandidates.add(createWarehouseCandidate(
                     warehouse, warehouseAllocation.getValue(), request));
+            selectedWarehouses.add(warehouseId);
         }
 
         return new OptimizationResult(
@@ -294,7 +406,27 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
                 warehouseCandidates,
                 bestPlan.score(),
                 bestPlan.totalShippingCost(),
-                bestPlan.maxEstimatedDeliveryHours());
+                bestPlan.maxEstimatedDeliveryHours(),
+                bestPlan.scoreBreakdown(),
+                reasoning.toList(),
+                selectedWarehouses,
+                computeEstimatedSavings(scoredPlans, bestPlan));
+    }
+
+    private BigDecimal computeEstimatedSavings(List<ScoredPlan> scoredPlans, ScoredPlan bestPlan) {
+        if (scoredPlans.size() <= 1) {
+            return null;
+        }
+
+        BigDecimal worstShippingCost = scoredPlans.stream()
+                .map(ScoredPlan::totalShippingCost)
+                .max(BigDecimal::compareTo)
+                .orElse(bestPlan.totalShippingCost());
+        BigDecimal savings = worstShippingCost.subtract(bestPlan.totalShippingCost());
+        if (savings.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return savings.setScale(SCORE_SCALE, RoundingMode.HALF_UP);
     }
 
     private WarehouseCandidate createWarehouseCandidate(
@@ -375,8 +507,19 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
         return allocatedQuantitiesByProductId.values().stream().mapToInt(Integer::intValue).sum();
     }
 
-    private OptimizationResult emptyResult() {
-        return new OptimizationResult(STRATEGY_NAME, List.of(), BigDecimal.ZERO, BigDecimal.ZERO, 0);
+    private OptimizationResult emptyResult(ReasoningCollector reasoning) {
+        PlanScoreBreakdown emptyBreakdown = new PlanScoreBreakdown(
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        return new OptimizationResult(
+                STRATEGY_NAME,
+                List.of(),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                0,
+                emptyBreakdown,
+                reasoning.toList(),
+                List.of(),
+                null);
     }
 
     public DistanceCalculator getDistanceCalculator() {
@@ -409,6 +552,7 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
     private record ScoredPlan(
             AllocationPlan plan,
             BigDecimal score,
+            PlanScoreBreakdown scoreBreakdown,
             BigDecimal totalShippingCost,
             int maxEstimatedDeliveryHours,
             BigDecimal totalWarehouseLoadPenalty) {
@@ -416,8 +560,18 @@ public final class WeightedGreedyStrategy implements OptimizationStrategy {
         private ScoredPlan {
             Objects.requireNonNull(plan, "plan must not be null");
             Objects.requireNonNull(score, "score must not be null");
+            Objects.requireNonNull(scoreBreakdown, "scoreBreakdown must not be null");
             Objects.requireNonNull(totalShippingCost, "totalShippingCost must not be null");
             Objects.requireNonNull(totalWarehouseLoadPenalty, "totalWarehouseLoadPenalty must not be null");
+        }
+    }
+
+    private record ScoredWarehouseLeg(
+            WarehouseAvailability warehouse, int allocationQuantity, BigDecimal score) {
+
+        private ScoredWarehouseLeg {
+            Objects.requireNonNull(warehouse, "warehouse must not be null");
+            Objects.requireNonNull(score, "score must not be null");
         }
     }
 

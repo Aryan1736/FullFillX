@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -82,6 +83,10 @@ public class Warehouse {
     @Builder.Default
     private Boolean active = true;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Inventory> inventories = new ArrayList<>();
@@ -93,4 +98,11 @@ public class Warehouse {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    public void increaseLoad(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Load increase must be positive");
+        }
+        currentLoad += quantity;
+    }
 }

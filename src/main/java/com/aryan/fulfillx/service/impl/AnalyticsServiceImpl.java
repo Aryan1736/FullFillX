@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service.impl;
 
+import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.response.AnalyticsResponseDto;
 import com.aryan.fulfillx.dto.response.InventoryStatusItemDto;
 import com.aryan.fulfillx.dto.response.InventoryStatusResponseDto;
@@ -27,8 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class AnalyticsServiceImpl implements AnalyticsService {
 
-    private static final int LOW_STOCK_THRESHOLD = 50;
-
     private final WarehouseRepository warehouseRepository;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
@@ -41,13 +40,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         log.debug("Fetching analytics summary");
 
         return AnalyticsResponseDto.builder()
+                .totalOrders(customerOrderRepository.count())
                 .totalWarehouses(warehouseRepository.count())
                 .totalProducts(productRepository.count())
-                .totalInventory(inventoryRepository.count())
-                .totalOrders(customerOrderRepository.count())
-                .averageWarehouseLoad(warehouseRepository.findAverageCurrentLoad())
+                .inventoryUtilization(round(inventoryRepository.findInventoryUtilizationPercentage(), 2))
+                .warehouseUtilization(round(warehouseRepository.findAverageUtilizationPercentage(), 2))
                 .averageShippingCost(allocationRepository.findAverageShippingCost())
-                .totalAllocations(allocationRepository.count())
+                .averageETA(round(allocationRepository.findAverageEstimatedDeliveryHours(), 2))
+                .totalSplitShipments(allocationRepository.countSplitShipments())
                 .build();
     }
 
@@ -111,7 +111,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
             if (available == 0) {
                 outOfStockCount++;
-            } else if (available < LOW_STOCK_THRESHOLD) {
+            } else if (available < InventoryConstants.LOW_STOCK_THRESHOLD) {
                 lowStockCount++;
             }
         }
@@ -161,7 +161,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         if (availableQuantity == 0) {
             return "OUT_OF_STOCK";
         }
-        if (availableQuantity < LOW_STOCK_THRESHOLD) {
+        if (availableQuantity < InventoryConstants.LOW_STOCK_THRESHOLD) {
             return "LOW_STOCK";
         }
         return "IN_STOCK";

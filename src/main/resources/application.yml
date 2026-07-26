@@ -1,0 +1,7 @@
+fulfillx:
+  optimization:
+    weights:
+      shipping-weight: 1.0
+      eta-weight: 1.0
+      load-weight: 1.0
+      split-shipment-penalty: 100.0

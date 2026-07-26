@@ -14,11 +14,12 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AnalyticsResponseDto {
 
+    private Long totalOrders;
     private Long totalWarehouses;
     private Long totalProducts;
-    private Long totalInventory;
-    private Long totalOrders;
-    private Double averageWarehouseLoad;
+    private Double inventoryUtilization;
+    private Double warehouseUtilization;
     private BigDecimal averageShippingCost;
-    private Long totalAllocations;
+    private Double averageETA;
+    private Long totalSplitShipments;
 }

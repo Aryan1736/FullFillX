@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +25,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
             ResourceNotFoundException ex, HttpServletRequest request) {
-        log.warn("Resource not found at {}: {}", request.getRequestURI(), ex.getMessage());
+        logException(ex, request, ex.getStatus());
         return buildErrorResponse(ex.getStatus(), ex.getMessage(), request, List.of());
     }
 
     @ExceptionHandler(FulfillxException.class)
     public ResponseEntity<ErrorResponse> handleFulfillxException(
             FulfillxException ex, HttpServletRequest request) {
-        log.warn("Business exception at {}: {}", request.getRequestURI(), ex.getMessage());
+        logException(ex, request, ex.getStatus());
         return buildErrorResponse(ex.getStatus(), ex.getMessage(), request, List.of());
     }
 
@@ -44,7 +45,7 @@ public class GlobalExceptionHandler {
                         error.getDefaultMessage(),
                         error.getRejectedValue()))
                 .toList();
-        log.warn("Validation failed at {}: {} field error(s)", request.getRequestURI(), errors.size());
+        logException(ex, request, HttpStatus.BAD_REQUEST, errors.size());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", request, errors);
     }
 
@@ -57,7 +58,7 @@ public class GlobalExceptionHandler {
                         violation.getMessage(),
                         violation.getInvalidValue()))
                 .toList();
-        log.warn("Constraint violation at {}: {} error(s)", request.getRequestURI(), errors.size());
+        logException(ex, request, HttpStatus.BAD_REQUEST, errors.size());
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", request, errors);
     }
 
@@ -65,7 +66,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         String message = String.format("Invalid value for parameter '%s'", ex.getName());
-        log.warn("Type mismatch at {}: {}", request.getRequestURI(), message);
+        logException(ex, request, HttpStatus.BAD_REQUEST);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, List.of());
     }
 
@@ -73,14 +74,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMissingParameter(
             MissingServletRequestParameterException ex, HttpServletRequest request) {
         String message = String.format("Required parameter '%s' is missing", ex.getParameterName());
-        log.warn("Missing parameter at {}: {}", request.getRequestURI(), message);
+        logException(ex, request, HttpStatus.BAD_REQUEST);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, List.of());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadableMessage(
             HttpMessageNotReadableException ex, HttpServletRequest request) {
-        log.warn("Malformed request body at {}: {}", request.getRequestURI(), ex.getMessage());
+        logException(ex, request, HttpStatus.BAD_REQUEST);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Malformed request body", request, List.of());
     }
 
@@ -88,14 +89,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidSortProperty(
             PropertyReferenceException ex, HttpServletRequest request) {
         String message = "Invalid sort field: " + ex.getPropertyName();
-        log.warn("Invalid sort property at {}: {}", request.getRequestURI(), ex.getPropertyName());
+        logException(ex, request, HttpStatus.BAD_REQUEST);
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, List.of());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, HttpServletRequest request) {
-        log.warn("Data integrity violation at {}: {}", request.getRequestURI(), ex.getMessage());
+        logException(ex, request, HttpStatus.CONFLICT);
         return buildErrorResponse(
                 HttpStatus.CONFLICT,
                 "Resource conflict or constraint violation",
@@ -103,14 +104,50 @@ public class GlobalExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
+            OptimisticLockingFailureException ex, HttpServletRequest request) {
+        logException(ex, request, HttpStatus.CONFLICT);
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "Concurrent inventory update detected. Retry the allocation.",
+                request,
+                List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest request) {
-        log.error("Unexpected error at {}", request.getRequestURI(), ex);
+        logException(ex, request, HttpStatus.INTERNAL_SERVER_ERROR);
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred",
                 request,
                 List.of());
+    }
+
+    private void logException(Exception ex, HttpServletRequest request, HttpStatus status) {
+        logException(ex, request, status, null);
+    }
+
+    private void logException(Exception ex, HttpServletRequest request, HttpStatus status, Integer errorCount) {
+        if (status.is5xxServerError()) {
+            log.error(
+                    "event=exception_handled exceptionType={} path={} status={} errorCount={} message={}",
+                    ex.getClass().getSimpleName(),
+                    request.getRequestURI(),
+                    status.value(),
+                    errorCount,
+                    ex.getMessage(),
+                    ex);
+            return;
+        }
+        log.warn(
+                "event=exception_handled exceptionType={} path={} status={} errorCount={} message={}",
+                ex.getClass().getSimpleName(),
+                request.getRequestURI(),
+                status.value(),
+                errorCount,
+                ex.getMessage());
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(

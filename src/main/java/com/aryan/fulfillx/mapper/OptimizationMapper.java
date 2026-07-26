@@ -1,14 +1,18 @@
 package com.aryan.fulfillx.mapper;
 
+import com.aryan.fulfillx.algorithm.model.OptimizationReasoning;
 import com.aryan.fulfillx.algorithm.model.OptimizationRequest;
 import com.aryan.fulfillx.algorithm.model.OptimizationResult;
+import com.aryan.fulfillx.algorithm.model.PlanScoreBreakdown;
 import com.aryan.fulfillx.algorithm.model.ScoreBreakdown;
 import com.aryan.fulfillx.algorithm.model.WarehouseCandidate;
 import com.aryan.fulfillx.dto.request.OptimizationOrderLineDto;
 import com.aryan.fulfillx.dto.request.OptimizationRequestDto;
 import com.aryan.fulfillx.dto.request.OptimizationWarehouseAvailabilityDto;
 import com.aryan.fulfillx.dto.request.OptimizationWeightsDto;
+import com.aryan.fulfillx.dto.response.OptimizationReasoningDto;
 import com.aryan.fulfillx.dto.response.OptimizationResponseDto;
+import com.aryan.fulfillx.dto.response.PlanScoreBreakdownDto;
 import com.aryan.fulfillx.dto.response.ScoreBreakdownDto;
 import com.aryan.fulfillx.dto.response.WarehouseCandidateDto;
 import org.mapstruct.Mapper;
@@ -29,4 +33,8 @@ public interface OptimizationMapper {
     WarehouseCandidateDto toWarehouseCandidateDto(WarehouseCandidate candidate);
 
     ScoreBreakdownDto toScoreBreakdownDto(ScoreBreakdown scoreBreakdown);
+
+    PlanScoreBreakdownDto toPlanScoreBreakdownDto(PlanScoreBreakdown scoreBreakdown);
+
+    OptimizationReasoningDto toOptimizationReasoningDto(OptimizationReasoning reasoning);
 }

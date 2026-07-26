@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service.impl;
 
+import com.aryan.fulfillx.dto.request.InventoryFilterRequest;
 import com.aryan.fulfillx.dto.request.InventoryRequest;
 import com.aryan.fulfillx.dto.response.InventoryResponse;
 import com.aryan.fulfillx.entity.Inventory;
@@ -10,6 +11,7 @@ import com.aryan.fulfillx.mapper.InventoryMapper;
 import com.aryan.fulfillx.repository.InventoryRepository;
 import com.aryan.fulfillx.repository.ProductRepository;
 import com.aryan.fulfillx.repository.WarehouseRepository;
+import com.aryan.fulfillx.repository.spec.InventorySpecifications;
 import com.aryan.fulfillx.service.InventoryService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -49,10 +51,11 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<InventoryResponse> getAll(Pageable pageable) {
-        log.debug("Fetching inventory page={}, size={}, sort={}",
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        return inventoryRepository.findAll(pageable).map(inventoryMapper::toResponse);
+    public Page<InventoryResponse> getAll(InventoryFilterRequest filter, Pageable pageable) {
+        log.debug("Fetching inventory page={}, size={}, sort={}, filter={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);
+        return inventoryRepository.findAll(InventorySpecifications.fromFilter(filter), pageable)
+                .map(inventoryMapper::toResponse);
     }
 
     @Override

@@ -45,6 +45,12 @@ public class AllocationServiceImpl implements AllocationService {
         allocation.setOrder(findCustomerOrderOrThrow(request.getOrderId()));
         allocation.setAllocationItems(buildAllocationItems(request.getAllocationItems(), allocation));
         Allocation saved = allocationRepository.save(allocation);
+        log.info(
+                "event=allocation_persisted allocationId={} orderId={} itemCount={} optimizationScore={}",
+                saved.getId(),
+                saved.getOrder().getId(),
+                saved.getAllocationItems().size(),
+                saved.getOptimizationScore());
         return allocationMapper.toResponse(saved);
     }
 
@@ -81,7 +87,14 @@ public class AllocationServiceImpl implements AllocationService {
             allocation.getAllocationItems().addAll(
                     buildAllocationItems(request.getAllocationItems(), allocation));
         }
-        return allocationMapper.toResponse(allocationRepository.save(allocation));
+        Allocation saved = allocationRepository.save(allocation);
+        log.info(
+                "event=allocation_persisted allocationId={} orderId={} itemCount={} optimizationScore={}",
+                saved.getId(),
+                saved.getOrder().getId(),
+                saved.getAllocationItems().size(),
+                saved.getOptimizationScore());
+        return allocationMapper.toResponse(saved);
     }
 
     @Override

@@ -35,19 +35,6 @@ public final class ScoreWeights {
         this.splitShipmentPenalty = Objects.requireNonNull(splitShipmentPenalty, "splitShipmentPenalty must not be null");
     }
 
-    /**
-     * Returns the default weights used by {@link DefaultScoreCalculator}.
-     *
-     * @return default score weights
-     */
-    public static ScoreWeights defaults() {
-        return new ScoreWeights(
-                BigDecimal.ONE,
-                BigDecimal.ONE,
-                BigDecimal.ONE,
-                BigDecimal.valueOf(100));
-    }
-
     public BigDecimal getShippingWeight() {
         return shippingWeight;
     }

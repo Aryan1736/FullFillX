@@ -21,9 +21,21 @@ public class OptimizationServiceImpl implements OptimizationService {
 
     @Override
     public OptimizationResponseDto run(OptimizationRequestDto request) {
-        log.debug("Running optimization for order {}", request.getOrderId());
+        log.info(
+                "event=optimization_started orderId={} orderLineCount={} warehouseCandidateCount={}",
+                request.getOrderId(),
+                request.getOrderLines().size(),
+                request.getWarehouseAvailabilities().size());
         OptimizationRequest optimizationRequest = optimizationMapper.toRequest(request);
         OptimizationResult result = optimizationEngine.optimize(optimizationRequest);
+        log.info(
+                "event=optimization_completed orderId={} strategy={} score={} selectedWarehouseCount={} shippingCost={} estimatedDeliveryHours={}",
+                request.getOrderId(),
+                result.getStrategyName(),
+                result.getOptimizationScore(),
+                result.getSelectedWarehouses().size(),
+                result.getTotalShippingCost(),
+                result.getEstimatedDeliveryHours());
         return optimizationMapper.toResponse(result);
     }
 }

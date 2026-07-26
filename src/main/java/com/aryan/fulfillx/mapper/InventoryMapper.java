@@ -19,6 +19,7 @@ public interface InventoryMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "warehouse", ignore = true)
     @Mapping(target = "product", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Inventory toEntity(InventoryRequest request);
@@ -27,6 +28,7 @@ public interface InventoryMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "warehouse", ignore = true)
     @Mapping(target = "product", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(InventoryRequest request, @MappingTarget Inventory inventory);

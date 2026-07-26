@@ -1,11 +1,13 @@
 package com.aryan.fulfillx.service.impl;
 
+import com.aryan.fulfillx.dto.request.WarehouseFilterRequest;
 import com.aryan.fulfillx.dto.request.WarehouseRequest;
 import com.aryan.fulfillx.dto.response.WarehouseResponse;
 import com.aryan.fulfillx.entity.Warehouse;
 import com.aryan.fulfillx.exception.ResourceNotFoundException;
 import com.aryan.fulfillx.mapper.WarehouseMapper;
 import com.aryan.fulfillx.repository.WarehouseRepository;
+import com.aryan.fulfillx.repository.spec.WarehouseSpecifications;
 import com.aryan.fulfillx.service.WarehouseService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +42,11 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<WarehouseResponse> getAll(Pageable pageable) {
-        log.debug("Fetching warehouses page={}, size={}, sort={}",
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        return warehouseRepository.findAll(pageable).map(warehouseMapper::toResponse);
+    public Page<WarehouseResponse> getAll(WarehouseFilterRequest filter, Pageable pageable) {
+        log.debug("Fetching warehouses page={}, size={}, sort={}, filter={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);
+        return warehouseRepository.findAll(WarehouseSpecifications.fromFilter(filter), pageable)
+                .map(warehouseMapper::toResponse);
     }
 
     @Override

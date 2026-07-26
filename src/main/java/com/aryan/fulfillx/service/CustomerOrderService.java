@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service;
 
+import com.aryan.fulfillx.dto.request.CustomerOrderFilterRequest;
 import com.aryan.fulfillx.dto.request.CustomerOrderRequest;
 import com.aryan.fulfillx.dto.response.CustomerOrderResponse;
 import java.util.UUID;
@@ -12,7 +13,7 @@ public interface CustomerOrderService {
 
     CustomerOrderResponse getById(UUID id);
 
-    Page<CustomerOrderResponse> getAll(Pageable pageable);
+    Page<CustomerOrderResponse> getAll(CustomerOrderFilterRequest filter, Pageable pageable);
 
     CustomerOrderResponse update(UUID id, CustomerOrderRequest request);
 

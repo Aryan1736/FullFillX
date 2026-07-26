@@ -1,5 +1,8 @@
 package com.aryan.fulfillx.entity;
 
+import com.aryan.fulfillx.entity.snapshot.AllocationPlanScoreBreakdown;
+import com.aryan.fulfillx.entity.snapshot.AllocationReasoningEntry;
+import com.aryan.fulfillx.entity.snapshot.AllocationWarehouseSnapshot;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +22,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -64,6 +69,21 @@ public class Allocation {
     @Min(0)
     @Column(name = "estimated_delivery_hours", nullable = false)
     private Integer estimatedDeliveryHours;
+
+    @Column(name = "strategy_name")
+    private String strategyName;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "score_breakdown", columnDefinition = "jsonb")
+    private AllocationPlanScoreBreakdown scoreBreakdown;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "reasoning", columnDefinition = "jsonb")
+    private List<AllocationReasoningEntry> reasoning;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "warehouse_snapshots", columnDefinition = "jsonb")
+    private List<AllocationWarehouseSnapshot> warehouseSnapshots;
 
     @OneToMany(mappedBy = "allocation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

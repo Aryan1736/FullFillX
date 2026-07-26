@@ -11,18 +11,24 @@ import com.aryan.fulfillx.algorithm.calculator.ShippingCostCalculator;
 import com.aryan.fulfillx.algorithm.engine.OptimizationEngine;
 import com.aryan.fulfillx.algorithm.strategy.OptimizationStrategy;
 import com.aryan.fulfillx.algorithm.strategy.WeightedGreedyStrategy;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@EnableConfigurationProperties(OptimizationProperties.class)
 public class OptimizationConfig {
 
     @Bean
-    public OptimizationEngine optimizationEngine() {
+    public ScoreCalculator scoreCalculator(OptimizationProperties optimizationProperties) {
+        return new DefaultScoreCalculator(optimizationProperties.toScoreWeights());
+    }
+
+    @Bean
+    public OptimizationEngine optimizationEngine(ScoreCalculator scoreCalculator) {
         DistanceCalculator distanceCalculator = new HaversineDistanceCalculator();
         ShippingCostCalculator shippingCostCalculator = new DefaultShippingCostCalculator();
         EtaCalculator etaCalculator = new DefaultEtaCalculator();
-        ScoreCalculator scoreCalculator = new DefaultScoreCalculator();
         OptimizationStrategy strategy = new WeightedGreedyStrategy(
                 distanceCalculator, shippingCostCalculator, etaCalculator, scoreCalculator);
         return new OptimizationEngine(strategy);

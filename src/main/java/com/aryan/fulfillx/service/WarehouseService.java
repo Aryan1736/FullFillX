@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service;
 
+import com.aryan.fulfillx.dto.request.WarehouseFilterRequest;
 import com.aryan.fulfillx.dto.request.WarehouseRequest;
 import com.aryan.fulfillx.dto.response.WarehouseResponse;
 import java.util.UUID;
@@ -12,7 +13,7 @@ public interface WarehouseService {
 
     WarehouseResponse getById(UUID id);
 
-    Page<WarehouseResponse> getAll(Pageable pageable);
+    Page<WarehouseResponse> getAll(WarehouseFilterRequest filter, Pageable pageable);
 
     WarehouseResponse update(UUID id, WarehouseRequest request);
 

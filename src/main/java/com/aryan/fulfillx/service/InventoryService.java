@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service;
 
+import com.aryan.fulfillx.dto.request.InventoryFilterRequest;
 import com.aryan.fulfillx.dto.request.InventoryRequest;
 import com.aryan.fulfillx.dto.response.InventoryResponse;
 import java.util.UUID;
@@ -12,7 +13,7 @@ public interface InventoryService {
 
     InventoryResponse getById(UUID id);
 
-    Page<InventoryResponse> getAll(Pageable pageable);
+    Page<InventoryResponse> getAll(InventoryFilterRequest filter, Pageable pageable);
 
     InventoryResponse update(UUID id, InventoryRequest request);
 

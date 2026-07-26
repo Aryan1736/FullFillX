@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.service.impl;
 
+import com.aryan.fulfillx.dto.request.CustomerOrderFilterRequest;
 import com.aryan.fulfillx.dto.request.CustomerOrderRequest;
 import com.aryan.fulfillx.dto.request.OrderItemRequest;
 import com.aryan.fulfillx.dto.response.CustomerOrderResponse;
@@ -13,6 +14,7 @@ import com.aryan.fulfillx.mapper.OrderItemMapper;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import com.aryan.fulfillx.repository.CustomerRepository;
 import com.aryan.fulfillx.repository.ProductRepository;
+import com.aryan.fulfillx.repository.spec.CustomerOrderSpecifications;
 import com.aryan.fulfillx.service.CustomerOrderService;
 import java.util.List;
 import java.util.UUID;
@@ -55,10 +57,10 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CustomerOrderResponse> getAll(Pageable pageable) {
-        log.debug("Fetching customer orders page={}, size={}, sort={}",
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        return customerOrderRepository.findAll(pageable)
+    public Page<CustomerOrderResponse> getAll(CustomerOrderFilterRequest filter, Pageable pageable) {
+        log.debug("Fetching customer orders page={}, size={}, sort={}, filter={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);
+        return customerOrderRepository.findAll(CustomerOrderSpecifications.fromFilter(filter), pageable)
                 .map(order -> {
                     order.getOrderItems().size();
                     return customerOrderMapper.toResponse(order);

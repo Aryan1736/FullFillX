@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.algorithm.calculator;
 
+import com.aryan.fulfillx.algorithm.model.PlanScoreBreakdown;
 import com.aryan.fulfillx.algorithm.model.ScoreBreakdown;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,13 +25,6 @@ public final class DefaultScoreCalculator implements ScoreCalculator {
      */
     public DefaultScoreCalculator(ScoreWeights weights) {
         this.weights = Objects.requireNonNull(weights, "weights must not be null");
-    }
-
-    /**
-     * Creates a score calculator using {@link ScoreWeights#defaults()}.
-     */
-    public DefaultScoreCalculator() {
-        this(ScoreWeights.defaults());
     }
 
     @Override
@@ -84,6 +78,29 @@ public final class DefaultScoreCalculator implements ScoreCalculator {
 
         return new ScoreBreakdown(
                 distanceScore, shippingCostScore, inventoryScore, warehouseLoadScore, totalScore);
+    }
+
+    @Override
+    public PlanScoreBreakdown scorePlanBreakdown(
+            BigDecimal totalShippingCost,
+            int maxEtaHours,
+            BigDecimal totalLoadPenalty,
+            int warehouseCount) {
+        Objects.requireNonNull(totalShippingCost, "totalShippingCost must not be null");
+        Objects.requireNonNull(totalLoadPenalty, "totalLoadPenalty must not be null");
+
+        BigDecimal shippingCostScore = weightedShippingCost(totalShippingCost);
+        BigDecimal etaScore = weightedEta(maxEtaHours);
+        BigDecimal warehouseLoadScore = weightedLoad(totalLoadPenalty);
+        BigDecimal splitShipmentPenalty = calculateSplitShipmentPenalty(warehouseCount);
+        BigDecimal totalScore = shippingCostScore
+                .add(etaScore)
+                .add(warehouseLoadScore)
+                .add(splitShipmentPenalty)
+                .setScale(SCORE_SCALE, RoundingMode.HALF_UP);
+
+        return new PlanScoreBreakdown(
+                shippingCostScore, etaScore, warehouseLoadScore, splitShipmentPenalty, totalScore);
     }
 
     @Override

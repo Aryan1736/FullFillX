@@ -1,5 +1,6 @@
 package com.aryan.fulfillx.algorithm.calculator;
 
+import com.aryan.fulfillx.algorithm.model.PlanScoreBreakdown;
 import com.aryan.fulfillx.algorithm.model.ScoreBreakdown;
 import java.math.BigDecimal;
 
@@ -52,6 +53,21 @@ public interface ScoreCalculator {
             int etaHours,
             BigDecimal loadPenalty,
             BigDecimal inventoryPenalty);
+
+    /**
+     * Builds a decomposed score breakdown for an entire allocation plan.
+     *
+     * @param totalShippingCost aggregate shipping cost across all warehouse legs
+     * @param maxEtaHours longest delivery time among warehouse legs
+     * @param totalLoadPenalty aggregate warehouse load penalty across all legs
+     * @param warehouseCount number of warehouses used by the plan
+     * @return weighted score components for the plan
+     */
+    PlanScoreBreakdown scorePlanBreakdown(
+            BigDecimal totalShippingCost,
+            int maxEtaHours,
+            BigDecimal totalLoadPenalty,
+            int warehouseCount);
 
     /**
      * Returns the weights applied by this calculator.

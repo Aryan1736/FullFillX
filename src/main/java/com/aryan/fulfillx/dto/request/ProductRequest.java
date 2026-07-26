@@ -18,15 +18,15 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ProductRequest {
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "{product.name.required}")
+    @Size(max = 255, message = "{product.name.size}")
     private String name;
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "{product.category.required}")
+    @Size(max = 100, message = "{product.category.size}")
     private String category;
 
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
+    @NotNull(message = "{product.weight.required}")
+    @DecimalMin(value = "0.0", inclusive = true, message = "{product.weight.min}")
     private BigDecimal weight;
 }

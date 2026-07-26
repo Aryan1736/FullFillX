@@ -2,8 +2,9 @@ package com.aryan.fulfillx.service;
 
 import com.aryan.fulfillx.dto.request.InventoryRequest;
 import com.aryan.fulfillx.dto.response.InventoryResponse;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface InventoryService {
 
@@ -11,7 +12,7 @@ public interface InventoryService {
 
     InventoryResponse getById(UUID id);
 
-    List<InventoryResponse> getAll();
+    Page<InventoryResponse> getAll(Pageable pageable);
 
     InventoryResponse update(UUID id, InventoryRequest request);
 

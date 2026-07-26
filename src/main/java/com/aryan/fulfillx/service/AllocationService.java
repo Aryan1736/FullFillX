@@ -2,8 +2,9 @@ package com.aryan.fulfillx.service;
 
 import com.aryan.fulfillx.dto.request.AllocationRequest;
 import com.aryan.fulfillx.dto.response.AllocationResponse;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface AllocationService {
 
@@ -11,7 +12,7 @@ public interface AllocationService {
 
     AllocationResponse getById(UUID id);
 
-    List<AllocationResponse> getAll();
+    Page<AllocationResponse> getAll(Pageable pageable);
 
     AllocationResponse update(UUID id, AllocationRequest request);
 

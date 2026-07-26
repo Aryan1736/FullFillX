@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,13 +55,14 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CustomerOrderResponse> getAll() {
-        return customerOrderRepository.findAll().stream()
+    public Page<CustomerOrderResponse> getAll(Pageable pageable) {
+        log.debug("Fetching customer orders page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return customerOrderRepository.findAll(pageable)
                 .map(order -> {
                     order.getOrderItems().size();
                     return customerOrderMapper.toResponse(order);
-                })
-                .toList();
+                });
     }
 
     @Override

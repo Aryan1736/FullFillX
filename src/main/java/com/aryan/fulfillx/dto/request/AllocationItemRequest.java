@@ -18,13 +18,13 @@ public class AllocationItemRequest {
 
     private UUID allocationId;
 
-    @NotNull
+    @NotNull(message = "{allocationItem.warehouseId.required}")
     private UUID warehouseId;
 
-    @NotNull
+    @NotNull(message = "{allocationItem.productId.required}")
     private UUID productId;
 
-    @NotNull
-    @Min(1)
+    @NotNull(message = "{allocationItem.quantity.required}")
+    @Min(value = 1, message = "{allocationItem.quantity.min}")
     private Integer quantity;
 }

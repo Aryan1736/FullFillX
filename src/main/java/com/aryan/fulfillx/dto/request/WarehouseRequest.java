@@ -19,30 +19,30 @@ import lombok.Setter;
 @AllArgsConstructor
 public class WarehouseRequest {
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "{warehouse.name.required}")
+    @Size(max = 255, message = "{warehouse.name.size}")
     private String name;
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "{warehouse.city.required}")
+    @Size(max = 100, message = "{warehouse.city.size}")
     private String city;
 
-    @NotNull
-    @DecimalMin("-90.0")
-    @DecimalMax("90.0")
+    @NotNull(message = "{warehouse.latitude.required}")
+    @DecimalMin(value = "-90.0", message = "{validation.latitude.range}")
+    @DecimalMax(value = "90.0", message = "{validation.latitude.range}")
     private Double latitude;
 
-    @NotNull
-    @DecimalMin("-180.0")
-    @DecimalMax("180.0")
+    @NotNull(message = "{warehouse.longitude.required}")
+    @DecimalMin(value = "-180.0", message = "{validation.longitude.range}")
+    @DecimalMax(value = "180.0", message = "{validation.longitude.range}")
     private Double longitude;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{warehouse.capacity.required}")
+    @Min(value = 0, message = "{warehouse.capacity.min}")
     private Integer capacity;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{warehouse.currentLoad.required}")
+    @Min(value = 0, message = "{warehouse.currentLoad.min}")
     private Integer currentLoad;
 
     private Boolean active;

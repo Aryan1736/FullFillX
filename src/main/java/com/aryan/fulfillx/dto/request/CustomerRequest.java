@@ -18,21 +18,21 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CustomerRequest {
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "{customer.name.required}")
+    @Size(max = 255, message = "{customer.name.size}")
     private String name;
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "{customer.city.required}")
+    @Size(max = 100, message = "{customer.city.size}")
     private String city;
 
-    @NotNull
-    @DecimalMin("-90.0")
-    @DecimalMax("90.0")
+    @NotNull(message = "{customer.latitude.required}")
+    @DecimalMin(value = "-90.0", message = "{validation.latitude.range}")
+    @DecimalMax(value = "90.0", message = "{validation.latitude.range}")
     private Double latitude;
 
-    @NotNull
-    @DecimalMin("-180.0")
-    @DecimalMax("180.0")
+    @NotNull(message = "{customer.longitude.required}")
+    @DecimalMin(value = "-180.0", message = "{validation.longitude.range}")
+    @DecimalMax(value = "180.0", message = "{validation.longitude.range}")
     private Double longitude;
 }

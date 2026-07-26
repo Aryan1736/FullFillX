@@ -20,16 +20,16 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CustomerOrderRequest {
 
-    @NotNull
+    @NotNull(message = "{order.customerId.required}")
     private UUID customerId;
 
     private OrderStatus status;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{order.totalItems.required}")
+    @Min(value = 0, message = "{order.totalItems.min}")
     private Integer totalItems;
 
-    @NotEmpty
+    @NotEmpty(message = "{order.orderItems.notEmpty}")
     @Valid
     private List<OrderItemRequest> orderItems;
 }

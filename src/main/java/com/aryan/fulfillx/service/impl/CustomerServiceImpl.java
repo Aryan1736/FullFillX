@@ -7,10 +7,11 @@ import com.aryan.fulfillx.exception.ResourceNotFoundException;
 import com.aryan.fulfillx.mapper.CustomerMapper;
 import com.aryan.fulfillx.repository.CustomerRepository;
 import com.aryan.fulfillx.service.CustomerService;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +40,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CustomerResponse> getAll() {
-        return customerRepository.findAll().stream()
-                .map(customerMapper::toResponse)
-                .toList();
+    public Page<CustomerResponse> getAll(Pageable pageable) {
+        log.debug("Fetching customers page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return customerRepository.findAll(pageable).map(customerMapper::toResponse);
     }
 
     @Override

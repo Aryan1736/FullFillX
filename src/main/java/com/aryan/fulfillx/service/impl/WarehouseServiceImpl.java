@@ -7,10 +7,11 @@ import com.aryan.fulfillx.exception.ResourceNotFoundException;
 import com.aryan.fulfillx.mapper.WarehouseMapper;
 import com.aryan.fulfillx.repository.WarehouseRepository;
 import com.aryan.fulfillx.service.WarehouseService;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +40,10 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WarehouseResponse> getAll() {
-        return warehouseRepository.findAll().stream()
-                .map(warehouseMapper::toResponse)
-                .toList();
+    public Page<WarehouseResponse> getAll(Pageable pageable) {
+        log.debug("Fetching warehouses page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return warehouseRepository.findAll(pageable).map(warehouseMapper::toResponse);
     }
 
     @Override

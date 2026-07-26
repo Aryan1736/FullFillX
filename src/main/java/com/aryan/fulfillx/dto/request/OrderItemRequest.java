@@ -18,10 +18,10 @@ public class OrderItemRequest {
 
     private UUID orderId;
 
-    @NotNull
+    @NotNull(message = "{orderItem.productId.required}")
     private UUID productId;
 
-    @NotNull
-    @Min(1)
+    @NotNull(message = "{orderItem.quantity.required}")
+    @Min(value = 1, message = "{orderItem.quantity.min}")
     private Integer quantity;
 }

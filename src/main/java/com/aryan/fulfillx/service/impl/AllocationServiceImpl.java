@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,13 +58,14 @@ public class AllocationServiceImpl implements AllocationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AllocationResponse> getAll() {
-        return allocationRepository.findAll().stream()
+    public Page<AllocationResponse> getAll(Pageable pageable) {
+        log.debug("Fetching allocations page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return allocationRepository.findAll(pageable)
                 .map(allocation -> {
                     allocation.getAllocationItems().size();
                     return allocationMapper.toResponse(allocation);
-                })
-                .toList();
+                });
     }
 
     @Override

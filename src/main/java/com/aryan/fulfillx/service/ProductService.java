@@ -2,8 +2,9 @@ package com.aryan.fulfillx.service;
 
 import com.aryan.fulfillx.dto.request.ProductRequest;
 import com.aryan.fulfillx.dto.response.ProductResponse;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ProductService {
 
@@ -11,7 +12,7 @@ public interface ProductService {
 
     ProductResponse getById(UUID id);
 
-    List<ProductResponse> getAll();
+    Page<ProductResponse> getAll(Pageable pageable);
 
     ProductResponse update(UUID id, ProductRequest request);
 

@@ -7,10 +7,11 @@ import com.aryan.fulfillx.exception.ResourceNotFoundException;
 import com.aryan.fulfillx.mapper.ProductMapper;
 import com.aryan.fulfillx.repository.ProductRepository;
 import com.aryan.fulfillx.service.ProductService;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +40,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAll() {
-        return productRepository.findAll().stream()
-                .map(productMapper::toResponse)
-                .toList();
+    public Page<ProductResponse> getAll(Pageable pageable) {
+        log.debug("Fetching products page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return productRepository.findAll(pageable).map(productMapper::toResponse);
     }
 
     @Override

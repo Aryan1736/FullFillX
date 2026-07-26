@@ -21,22 +21,22 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AllocationRequest {
 
-    @NotNull
+    @NotNull(message = "{allocation.orderId.required}")
     private UUID orderId;
 
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
+    @NotNull(message = "{allocation.optimizationScore.required}")
+    @DecimalMin(value = "0.0", inclusive = true, message = "{allocation.optimizationScore.min}")
     private BigDecimal optimizationScore;
 
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
+    @NotNull(message = "{allocation.shippingCost.required}")
+    @DecimalMin(value = "0.0", inclusive = true, message = "{allocation.shippingCost.min}")
     private BigDecimal shippingCost;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{allocation.estimatedDeliveryHours.required}")
+    @Min(value = 0, message = "{allocation.estimatedDeliveryHours.min}")
     private Integer estimatedDeliveryHours;
 
-    @NotEmpty
+    @NotEmpty(message = "{allocation.allocationItems.notEmpty}")
     @Valid
     private List<AllocationItemRequest> allocationItems;
 }

@@ -1,17 +1,21 @@
 package com.aryan.fulfillx.controller;
 
 import com.aryan.fulfillx.dto.request.WarehouseRequest;
+import com.aryan.fulfillx.dto.response.ApiResponse;
+import com.aryan.fulfillx.dto.response.PageResponse;
 import com.aryan.fulfillx.dto.response.WarehouseResponse;
 import com.aryan.fulfillx.service.WarehouseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/warehouses")
 @RequiredArgsConstructor
@@ -34,50 +39,59 @@ public class WarehouseController {
     @PostMapping
     @Operation(summary = "Create a warehouse")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Warehouse created"),
-        @ApiResponse(responseCode = "400", description = "Invalid request")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Warehouse created"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<WarehouseResponse> create(@Valid @RequestBody WarehouseRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.create(request));
+    public ResponseEntity<ApiResponse<WarehouseResponse>> create(@Valid @RequestBody WarehouseRequest request) {
+        log.info("Creating warehouse: {}", request.getName());
+        WarehouseResponse response = warehouseService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created("Warehouse created successfully", response));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a warehouse by ID")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Warehouse found"),
-        @ApiResponse(responseCode = "404", description = "Warehouse not found")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Warehouse found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Warehouse not found")
     })
-    public ResponseEntity<WarehouseResponse> getById(
+    public ResponseEntity<ApiResponse<WarehouseResponse>> getById(
             @Parameter(description = "Warehouse ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(warehouseService.getById(id));
+        log.info("Fetching warehouse: {}", id);
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.getById(id)));
     }
 
     @GetMapping
-    @Operation(summary = "List all warehouses")
-    public ResponseEntity<List<WarehouseResponse>> getAll() {
-        return ResponseEntity.ok(warehouseService.getAll());
+    @Operation(summary = "List warehouses with pagination and sorting")
+    public ResponseEntity<ApiResponse<PageResponse<WarehouseResponse>>> getAll(
+            @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+        log.info("Listing warehouses page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(warehouseService.getAll(pageable))));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update a warehouse")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Warehouse updated"),
-        @ApiResponse(responseCode = "400", description = "Invalid request"),
-        @ApiResponse(responseCode = "404", description = "Warehouse not found")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Warehouse updated"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Warehouse not found")
     })
-    public ResponseEntity<WarehouseResponse> update(
+    public ResponseEntity<ApiResponse<WarehouseResponse>> update(
             @Parameter(description = "Warehouse ID") @PathVariable UUID id,
             @Valid @RequestBody WarehouseRequest request) {
-        return ResponseEntity.ok(warehouseService.update(id, request));
+        log.info("Updating warehouse: {}", id);
+        return ResponseEntity.ok(ApiResponse.success("Warehouse updated successfully", warehouseService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a warehouse")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Warehouse deleted"),
-        @ApiResponse(responseCode = "404", description = "Warehouse not found")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Warehouse deleted"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Warehouse not found")
     })
     public ResponseEntity<Void> delete(@Parameter(description = "Warehouse ID") @PathVariable UUID id) {
+        log.info("Deleting warehouse: {}", id);
         warehouseService.delete(id);
         return ResponseEntity.noContent().build();
     }

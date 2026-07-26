@@ -16,17 +16,17 @@ import lombok.Setter;
 @AllArgsConstructor
 public class InventoryRequest {
 
-    @NotNull
+    @NotNull(message = "{inventory.warehouseId.required}")
     private UUID warehouseId;
 
-    @NotNull
+    @NotNull(message = "{inventory.productId.required}")
     private UUID productId;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{inventory.availableQuantity.required}")
+    @Min(value = 0, message = "{inventory.availableQuantity.min}")
     private Integer availableQuantity;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "{inventory.reservedQuantity.required}")
+    @Min(value = 0, message = "{inventory.reservedQuantity.min}")
     private Integer reservedQuantity;
 }

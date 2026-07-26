@@ -2,8 +2,9 @@ package com.aryan.fulfillx.service;
 
 import com.aryan.fulfillx.dto.request.WarehouseRequest;
 import com.aryan.fulfillx.dto.response.WarehouseResponse;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface WarehouseService {
 
@@ -11,7 +12,7 @@ public interface WarehouseService {
 
     WarehouseResponse getById(UUID id);
 
-    List<WarehouseResponse> getAll();
+    Page<WarehouseResponse> getAll(Pageable pageable);
 
     WarehouseResponse update(UUID id, WarehouseRequest request);
 

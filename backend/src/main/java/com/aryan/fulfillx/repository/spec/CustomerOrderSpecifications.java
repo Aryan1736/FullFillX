@@ -2,6 +2,7 @@ package com.aryan.fulfillx.repository.spec;
 
 import com.aryan.fulfillx.dto.request.CustomerOrderFilterRequest;
 import com.aryan.fulfillx.entity.CustomerOrder;
+import jakarta.persistence.criteria.JoinType;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,6 +16,13 @@ public final class CustomerOrderSpecifications {
         return (root, query, criteriaBuilder) -> {
             if (filter == null) {
                 return criteriaBuilder.conjunction();
+            }
+
+            root.fetch("customer", JoinType.LEFT);
+            var orderItems = root.fetch("orderItems", JoinType.LEFT);
+            orderItems.fetch("product", JoinType.LEFT);
+            if (query != null) {
+                query.distinct(true);
             }
 
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();

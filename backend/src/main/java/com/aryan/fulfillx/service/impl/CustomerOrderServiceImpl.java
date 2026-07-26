@@ -50,8 +50,8 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     @Override
     @Transactional(readOnly = true)
     public CustomerOrderResponse getById(UUID id) {
-        CustomerOrder order = findCustomerOrderOrThrow(id);
-        order.getOrderItems().size();
+        CustomerOrder order = customerOrderRepository.findDetailedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CustomerOrder", id));
         return customerOrderMapper.toResponse(order);
     }
 
@@ -61,10 +61,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         log.debug("Fetching customer orders page={}, size={}, sort={}, filter={}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);
         return customerOrderRepository.findAll(CustomerOrderSpecifications.fromFilter(filter), pageable)
-                .map(order -> {
-                    order.getOrderItems().size();
-                    return customerOrderMapper.toResponse(order);
-                });
+                .map(customerOrderMapper::toResponse);
     }
 
     @Override

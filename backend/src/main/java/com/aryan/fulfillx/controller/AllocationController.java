@@ -1,6 +1,7 @@
 package com.aryan.fulfillx.controller;
 
 import com.aryan.fulfillx.config.OpenApiExamples;
+import com.aryan.fulfillx.dto.request.AllocationFilterRequest;
 import com.aryan.fulfillx.dto.request.AllocationRequest;
 import com.aryan.fulfillx.dto.response.AllocationDetailResponse;
 import com.aryan.fulfillx.dto.response.AllocationResponse;
@@ -27,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -95,10 +97,12 @@ public class AllocationController {
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     examples = @ExampleObject(name = "Allocation page", value = OpenApiExamples.PAGE_RESPONSE)))
     public ResponseEntity<ApiResponse<PageResponse<AllocationDetailResponse>>> getAll(
+            @Valid @ModelAttribute AllocationFilterRequest filter,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        log.info("Listing allocation history page={}, size={}, sort={}",
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(allocationHistoryService.getAll(pageable))));
+        log.info("Listing allocation history page={}, size={}, sort={}, filter={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);
+        return ResponseEntity.ok(ApiResponse.success(
+                PageResponse.from(allocationHistoryService.getAll(filter, pageable))));
     }
 
     @PutMapping("/{id}")

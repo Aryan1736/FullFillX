@@ -1,40 +1,13 @@
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
-
 import { formatQuantity } from '../../services/inventoryService'
 import type { InventoryItem, InventorySort, InventorySortField } from '../../types/inventory'
 import { cn } from '../../utils/cn'
+import { SortableHeader } from '../common/SortableHeader'
 import { LowStockBadge } from './LowStockBadge'
 
 type InventoryTableProps = {
   items: InventoryItem[]
   sort: InventorySort
   onSortChange: (field: InventorySortField) => void
-}
-
-type SortableHeaderProps = {
-  label: string
-  field: InventorySortField
-  sort: InventorySort
-  onSortChange: (field: InventorySortField) => void
-  className?: string
-}
-
-function SortableHeader({ label, field, sort, onSortChange, className }: SortableHeaderProps) {
-  const isActive = sort.field === field
-  const Icon = !isActive ? ArrowUpDown : sort.direction === 'asc' ? ArrowUp : ArrowDown
-
-  return (
-    <th scope="col" className={className}>
-      <button
-        type="button"
-        onClick={() => onSortChange(field)}
-        className="inline-flex items-center gap-1.5 text-left font-medium text-slate-600 transition-colors hover:text-slate-900"
-      >
-        {label}
-        <Icon className={cn('size-3.5', isActive ? 'text-slate-900' : 'text-slate-400')} aria-hidden="true" />
-      </button>
-    </th>
-  )
 }
 
 export function InventoryTable({ items, sort, onSortChange }: InventoryTableProps) {

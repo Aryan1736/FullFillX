@@ -5,6 +5,7 @@ import type {
   InventorySort,
   PageResponse,
 } from '../types/inventory'
+import { toggleSort as toggleSortUtil } from '../utils/toggleSort'
 
 export class InventoryService {
   async getInventory(params: InventoryQueryParams): Promise<PageResponse<InventoryItem>> {
@@ -22,16 +23,5 @@ export function toggleSort(
   current: InventorySort,
   field: InventorySort['field'],
 ): InventorySort {
-  if (current.field === field) {
-    return {
-      field,
-      direction: current.direction === 'asc' ? 'desc' : 'asc',
-    }
-  }
-
-  return { field, direction: 'asc' }
-}
-
-export function isInventoryListEmpty(page: PageResponse<InventoryItem> | undefined): boolean {
-  return !page || page.totalElements === 0
+  return toggleSortUtil(current, field)
 }

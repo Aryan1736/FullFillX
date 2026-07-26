@@ -7,12 +7,14 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AllocationRepository extends JpaRepository<Allocation, UUID> {
+public interface AllocationRepository extends JpaRepository<Allocation, UUID>, JpaSpecificationExecutor<Allocation> {
 
     @EntityGraph(attributePaths = {
         "order",
@@ -29,8 +31,7 @@ public interface AllocationRepository extends JpaRepository<Allocation, UUID> {
         "allocationItems.warehouse",
         "allocationItems.product"
     })
-    @Query("SELECT a FROM Allocation a")
-    Page<Allocation> findAllDetailed(Pageable pageable);
+    Page<Allocation> findAll(Specification<Allocation> specification, Pageable pageable);
 
     @EntityGraph(attributePaths = {
         "order",
@@ -39,6 +40,14 @@ public interface AllocationRepository extends JpaRepository<Allocation, UUID> {
         "allocationItems.product"
     })
     Optional<Allocation> findTopByOrder_IdOrderByCreatedAtDesc(UUID orderId);
+
+    @EntityGraph(attributePaths = {
+        "order",
+        "allocationItems",
+        "allocationItems.warehouse",
+        "allocationItems.product"
+    })
+    Page<Allocation> findAll(Pageable pageable);
 
     @Query("SELECT COALESCE(AVG(a.shippingCost), 0) FROM Allocation a")
     BigDecimal findAverageShippingCost();

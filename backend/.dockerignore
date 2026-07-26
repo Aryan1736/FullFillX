@@ -1,0 +1,7 @@
+target/
+.idea/
+*.iml
+.vscode/
+.cursor/
+replay_pid*.log
+hs_err_pid*.log

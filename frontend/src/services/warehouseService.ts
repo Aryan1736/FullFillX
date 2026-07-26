@@ -5,6 +5,7 @@ import type {
   WarehouseQueryParams,
   WarehouseSort,
 } from '../types/warehouse'
+import { toggleSort as toggleSortUtil } from '../utils/toggleSort'
 
 export class WarehouseService {
   async getWarehouses(params: WarehouseQueryParams): Promise<PageResponse<Warehouse>> {
@@ -91,20 +92,9 @@ export function buildSortParam(sort?: WarehouseSort): string | undefined {
   return `${sort.field},${sort.direction}`
 }
 
-export function isWarehouseListEmpty(page: PageResponse<Warehouse> | undefined): boolean {
-  return !page || page.totalElements === 0
-}
-
 export function toggleSort(
   current: WarehouseSort,
   field: WarehouseSort['field'],
 ): WarehouseSort {
-  if (current.field === field) {
-    return {
-      field,
-      direction: current.direction === 'asc' ? 'desc' : 'asc',
-    }
-  }
-
-  return { field, direction: 'asc' }
+  return toggleSortUtil(current, field)
 }

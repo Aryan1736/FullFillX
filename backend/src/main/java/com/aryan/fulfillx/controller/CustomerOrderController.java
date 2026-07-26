@@ -94,7 +94,7 @@ public class CustomerOrderController {
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     examples = @ExampleObject(name = "Order page", value = OpenApiExamples.PAGE_RESPONSE)))
     public ResponseEntity<ApiResponse<PageResponse<CustomerOrderResponse>>> getAll(
-            @ModelAttribute CustomerOrderFilterRequest filter,
+            @Valid @ModelAttribute CustomerOrderFilterRequest filter,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Listing customer orders page={}, size={}, sort={}, filter={}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), filter);

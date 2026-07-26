@@ -1,7 +1,7 @@
 package com.aryan.fulfillx.mapper;
 
-import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.request.InventoryRequest;
+import com.aryan.fulfillx.util.InventoryStatusResolver;
 import com.aryan.fulfillx.dto.response.InventoryResponse;
 import com.aryan.fulfillx.entity.Inventory;
 import com.aryan.fulfillx.entity.Product;
@@ -62,9 +62,6 @@ public interface InventoryMapper {
     }
 
     default boolean isLowStock(Inventory inventory) {
-        Integer availableQuantity = inventory.getAvailableQuantity();
-        return availableQuantity != null
-                && availableQuantity > 0
-                && availableQuantity < InventoryConstants.LOW_STOCK_THRESHOLD;
+        return InventoryStatusResolver.isLowStock(inventory);
     }
 }

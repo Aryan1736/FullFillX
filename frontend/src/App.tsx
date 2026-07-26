@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, ScrollRestoration } from 'react-router-dom'
 
+import { ConfirmDialogProvider } from './components/common/ConfirmDialogProvider'
+import { ToastProvider } from './components/common/ToastProvider'
 import { AppRoutes } from './routes/AppRoutes'
 
 const queryClient = new QueryClient({
@@ -17,7 +19,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <ToastProvider>
+          <ConfirmDialogProvider>
+            <ScrollRestoration getKey={(location) => location.pathname} />
+            <AppRoutes />
+          </ConfirmDialogProvider>
+        </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

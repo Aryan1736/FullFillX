@@ -1,7 +1,8 @@
 import { AlertCircle, Loader2, MapPin, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useRef } from 'react'
 
 import { useWarehouse } from '../../hooks/useWarehouses'
+import { useDrawerA11y } from '../../hooks/useDrawerA11y'
 import type { Warehouse } from '../../types/warehouse'
 import {
   calculateUtilization,
@@ -13,21 +14,13 @@ import {
   getUtilizationTone,
 } from '../../services/warehouseService'
 import { cn } from '../../utils/cn'
+import { DetailRow } from '../common/DetailRow'
 
 type WarehouseDetailsDrawerProps = {
   warehouseId: string | null
   preview?: Warehouse | null
   isOpen: boolean
   onClose: () => void
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="text-right text-sm font-medium text-slate-900">{value}</dd>
-    </div>
-  )
 }
 
 export function WarehouseDetailsDrawer({
@@ -39,25 +32,8 @@ export function WarehouseDetailsDrawer({
   const { data: warehouse, isLoading, isError } = useWarehouse(isOpen ? warehouseId : null)
   const details = warehouse ?? preview
 
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, onClose])
+  const drawerRef = useRef<HTMLElement>(null)
+  useDrawerA11y({ isOpen, onClose, containerRef: drawerRef })
 
   if (!isOpen) {
     return null
@@ -76,6 +52,7 @@ export function WarehouseDetailsDrawer({
       />
 
       <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="warehouse-details-title"

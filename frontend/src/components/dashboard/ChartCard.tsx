@@ -22,17 +22,17 @@ export function ChartCard({
   return (
     <section
       className={cn(
-        'rounded-xl border border-slate-200 bg-white p-5 shadow-sm',
+        'rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md',
         className,
       )}
     >
       <header className="mb-4">
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-        {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+        <h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>
+        {description ? <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p> : null}
       </header>
 
       {isEmpty ? (
-        <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm text-slate-500">
+        <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 text-center text-sm leading-relaxed text-slate-500">
           {emptyMessage}
         </div>
       ) : (

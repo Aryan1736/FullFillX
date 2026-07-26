@@ -8,9 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface WarehouseRepository extends JpaRepository<Warehouse, UUID>, JpaSpecificationExecutor<Warehouse> {
 
-    @Query("SELECT COALESCE(AVG(w.currentLoad), 0.0) FROM Warehouse w")
-    Double findAverageCurrentLoad();
-
     @Query("""
             SELECT CASE WHEN COUNT(w) = 0 THEN 0.0
             ELSE AVG(CASE WHEN w.capacity = 0 THEN 0.0 ELSE (w.currentLoad * 100.0) / w.capacity END)

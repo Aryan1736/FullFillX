@@ -81,7 +81,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     private Inventory findInventoryOrThrow(UUID id) {
-        return inventoryRepository.findById(id)
+        return inventoryRepository.findDetailedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory", id));
     }
 

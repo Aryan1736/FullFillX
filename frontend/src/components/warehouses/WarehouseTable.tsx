@@ -1,5 +1,3 @@
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
-
 import type { Warehouse, WarehouseSort, WarehouseSortField } from '../../types/warehouse'
 import {
   calculateUtilization,
@@ -8,39 +6,15 @@ import {
   getStatusLabel,
   getUtilizationTone,
 } from '../../services/warehouseService'
+import { handleRowKeyDown } from '../../utils/keyboard'
 import { cn } from '../../utils/cn'
+import { SortableHeader } from '../common/SortableHeader'
 
 type WarehouseTableProps = {
   warehouses: Warehouse[]
   sort: WarehouseSort
   onSortChange: (field: WarehouseSortField) => void
   onViewDetails: (warehouse: Warehouse) => void
-}
-
-type SortableHeaderProps = {
-  label: string
-  field: WarehouseSortField
-  sort: WarehouseSort
-  onSortChange: (field: WarehouseSortField) => void
-  className?: string
-}
-
-function SortableHeader({ label, field, sort, onSortChange, className }: SortableHeaderProps) {
-  const isActive = sort.field === field
-  const Icon = !isActive ? ArrowUpDown : sort.direction === 'asc' ? ArrowUp : ArrowDown
-
-  return (
-    <th scope="col" className={className}>
-      <button
-        type="button"
-        onClick={() => onSortChange(field)}
-        className="inline-flex items-center gap-1.5 text-left font-medium text-slate-600 transition-colors hover:text-slate-900"
-      >
-        {label}
-        <Icon className={cn('size-3.5', isActive ? 'text-slate-900' : 'text-slate-400')} aria-hidden="true" />
-      </button>
-    </th>
-  )
 }
 
 function UtilizationCell({ value }: { value: number }) {
@@ -135,8 +109,12 @@ export function WarehouseTable({
               return (
                 <tr
                   key={warehouse.id}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View details for ${warehouse.name}`}
                   className="cursor-pointer transition-colors hover:bg-slate-50"
                   onClick={() => onViewDetails(warehouse)}
+                  onKeyDown={(event) => handleRowKeyDown(event, () => onViewDetails(warehouse))}
                 >
                   <td className="px-4 py-3 text-sm font-medium text-slate-900">{warehouse.name}</td>
                   <td className="px-4 py-3 text-sm text-slate-600">{warehouse.city}</td>

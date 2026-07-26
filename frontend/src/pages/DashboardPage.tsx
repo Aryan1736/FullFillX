@@ -81,7 +81,10 @@ export function DashboardPage() {
       />
 
       {isMock ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div
+          role="status"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        >
           Backend unavailable. Showing temporary demo data until the API is reachable.
         </div>
       ) : null}

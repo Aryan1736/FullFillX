@@ -1,7 +1,7 @@
 package com.aryan.fulfillx.service.impl;
 
-import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.response.AnalyticsResponseDto;
+import com.aryan.fulfillx.util.InventoryStatusResolver;
 import com.aryan.fulfillx.dto.response.InventoryStatusItemDto;
 import com.aryan.fulfillx.dto.response.InventoryStatusResponseDto;
 import com.aryan.fulfillx.dto.response.ShippingCostAnalysisResponseDto;
@@ -60,13 +60,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(this::toWarehouseUtilizationItem)
                 .toList();
 
-        double averageUtilization = warehouses.stream()
-                .mapToDouble(WarehouseUtilizationItemDto::getUtilizationPercentage)
-                .average()
-                .orElse(0.0);
-
         return WarehouseUtilizationResponseDto.builder()
-                .averageUtilizationPercentage(round(averageUtilization, 2))
+                .averageUtilizationPercentage(round(warehouseRepository.findAverageUtilizationPercentage(), 2))
                 .warehouses(warehouses)
                 .build();
     }
@@ -83,37 +78,32 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         long outOfStockCount = 0;
         long lowStockCount = 0;
 
-        List<InventoryStatusItemDto> items = inventories.stream()
-                .map(inventory -> {
-                    int available = inventory.getAvailableQuantity();
-                    int reserved = inventory.getReservedQuantity();
-                    int total = available + reserved;
-                    String status = resolveInventoryStatus(available);
-
-                    return InventoryStatusItemDto.builder()
-                            .warehouseId(inventory.getWarehouse().getId())
-                            .warehouseName(inventory.getWarehouse().getName())
-                            .productId(inventory.getProduct().getId())
-                            .productName(inventory.getProduct().getName())
-                            .availableQuantity(available)
-                            .reservedQuantity(reserved)
-                            .totalQuantity(total)
-                            .status(status)
-                            .build();
-                })
-                .toList();
+        List<InventoryStatusItemDto> items = new java.util.ArrayList<>();
 
         for (Inventory inventory : inventories) {
             int available = inventory.getAvailableQuantity();
             int reserved = inventory.getReservedQuantity();
+            int total = available + reserved;
+
             totalAvailable += available;
             totalReserved += reserved;
 
             if (available == 0) {
                 outOfStockCount++;
-            } else if (available < InventoryConstants.LOW_STOCK_THRESHOLD) {
+            } else if (InventoryStatusResolver.isLowStock(inventory)) {
                 lowStockCount++;
             }
+
+            items.add(InventoryStatusItemDto.builder()
+                    .warehouseId(inventory.getWarehouse().getId())
+                    .warehouseName(inventory.getWarehouse().getName())
+                    .productId(inventory.getProduct().getId())
+                    .productName(inventory.getProduct().getName())
+                    .availableQuantity(available)
+                    .reservedQuantity(reserved)
+                    .totalQuantity(total)
+                    .status(InventoryStatusResolver.resolveStatus(available))
+                    .build());
         }
 
         return InventoryStatusResponseDto.builder()
@@ -155,16 +145,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .currentLoad(warehouse.getCurrentLoad())
                 .utilizationPercentage(round(utilization, 2))
                 .build();
-    }
-
-    private String resolveInventoryStatus(int availableQuantity) {
-        if (availableQuantity == 0) {
-            return "OUT_OF_STOCK";
-        }
-        if (availableQuantity < InventoryConstants.LOW_STOCK_THRESHOLD) {
-            return "LOW_STOCK";
-        }
-        return "IN_STOCK";
     }
 
     private double round(double value, int scale) {

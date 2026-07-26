@@ -17,7 +17,10 @@ import com.aryan.fulfillx.repository.ProductRepository;
 import com.aryan.fulfillx.repository.WarehouseRepository;
 import com.aryan.fulfillx.service.AllocationService;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -57,8 +60,8 @@ public class AllocationServiceImpl implements AllocationService {
     @Override
     @Transactional(readOnly = true)
     public AllocationResponse getById(UUID id) {
-        Allocation allocation = findAllocationOrThrow(id);
-        allocation.getAllocationItems().size();
+        Allocation allocation = allocationRepository.findDetailedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Allocation", id));
         return allocationMapper.toResponse(allocation);
     }
 
@@ -68,10 +71,7 @@ public class AllocationServiceImpl implements AllocationService {
         log.debug("Fetching allocations page={}, size={}, sort={}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
         return allocationRepository.findAll(pageable)
-                .map(allocation -> {
-                    allocation.getAllocationItems().size();
-                    return allocationMapper.toResponse(allocation);
-                });
+                .map(allocationMapper::toResponse);
     }
 
     @Override
@@ -107,34 +107,45 @@ public class AllocationServiceImpl implements AllocationService {
 
     private List<AllocationItem> buildAllocationItems(
             List<AllocationItemRequest> itemRequests, Allocation allocation) {
+        if (itemRequests.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, Warehouse> warehouses = warehouseRepository.findAllById(
+                        itemRequests.stream().map(AllocationItemRequest::getWarehouseId).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(Warehouse::getId, Function.identity()));
+        Map<UUID, Product> products = productRepository.findAllById(
+                        itemRequests.stream().map(AllocationItemRequest::getProductId).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
         return itemRequests.stream()
                 .map(itemRequest -> {
+                    Warehouse warehouse = warehouses.get(itemRequest.getWarehouseId());
+                    if (warehouse == null) {
+                        throw new ResourceNotFoundException("Warehouse", itemRequest.getWarehouseId());
+                    }
+                    Product product = products.get(itemRequest.getProductId());
+                    if (product == null) {
+                        throw new ResourceNotFoundException("Product", itemRequest.getProductId());
+                    }
                     AllocationItem allocationItem = allocationItemMapper.toEntity(itemRequest);
                     allocationItem.setAllocation(allocation);
-                    allocationItem.setWarehouse(findWarehouseOrThrow(itemRequest.getWarehouseId()));
-                    allocationItem.setProduct(findProductOrThrow(itemRequest.getProductId()));
+                    allocationItem.setWarehouse(warehouse);
+                    allocationItem.setProduct(product);
                     return allocationItem;
                 })
                 .toList();
     }
 
     private Allocation findAllocationOrThrow(UUID id) {
-        return allocationRepository.findById(id)
+        return allocationRepository.findDetailedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Allocation", id));
     }
 
     private CustomerOrder findCustomerOrderOrThrow(UUID id) {
         return customerOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomerOrder", id));
-    }
-
-    private Warehouse findWarehouseOrThrow(UUID id) {
-        return warehouseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse", id));
-    }
-
-    private Product findProductOrThrow(UUID id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
     }
 }

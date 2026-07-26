@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { PageHeader } from '../components/common/PageHeader'
+import { Pagination } from '../components/common/Pagination'
 import {
   InventoryFilters,
   type LowStockFilter,
 } from '../components/inventory/InventoryFilters'
-import { InventoryPagination } from '../components/inventory/InventoryPagination'
 import { InventoryTable } from '../components/inventory/InventoryTable'
 import {
   InventoryEmptyState,
   InventoryErrorState,
   InventoryTableSkeleton,
 } from '../components/inventory/InventoryStates'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useInventory } from '../hooks/useInventory'
 import { useWarehouses } from '../hooks/useWarehouses'
 import { toggleSort } from '../services/inventoryService'
@@ -22,15 +23,10 @@ const PAGE_SIZE = 10
 export function InventoryPage() {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
   const [warehouseId, setWarehouseId] = useState('')
   const [lowStockFilter, setLowStockFilter] = useState<LowStockFilter>('all')
   const [sort, setSort] = useState<InventorySort>({ field: 'productName', direction: 'asc' })
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
-    return () => window.clearTimeout(timer)
-  }, [search])
 
   useEffect(() => {
     setPage(0)
@@ -94,7 +90,7 @@ export function InventoryPage() {
         <>
           <InventoryTable items={items} sort={sort} onSortChange={handleSortChange} />
 
-          <InventoryPagination
+          <Pagination
             page={page}
             pageSize={PAGE_SIZE}
             totalElements={data?.totalElements ?? 0}
@@ -103,6 +99,7 @@ export function InventoryPage() {
             isLast={data?.last ?? page >= (data?.totalPages ?? 1) - 1}
             isFetching={isFetching}
             onPageChange={setPage}
+            itemLabel="records"
           />
         </>
       ) : null}

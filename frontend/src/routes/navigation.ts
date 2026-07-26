@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  History,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -21,6 +22,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Warehouses', path: paths.warehouses, icon: Warehouse },
   { label: 'Inventory', path: paths.inventory, icon: Package },
   { label: 'Orders', path: paths.orders, icon: ShoppingCart },
+  { label: 'Allocations', path: paths.allocations, icon: History },
   { label: 'Optimization', path: paths.optimization, icon: Sparkles },
   { label: 'Analytics', path: paths.analytics, icon: BarChart3 },
 ]

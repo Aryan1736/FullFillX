@@ -4,9 +4,12 @@ import com.aryan.fulfillx.config.OpenApiExamples;
 import com.aryan.fulfillx.dto.response.AnalyticsResponseDto;
 import com.aryan.fulfillx.dto.response.ApiResponse;
 import com.aryan.fulfillx.dto.response.InventoryStatusResponseDto;
+import com.aryan.fulfillx.dto.response.OrdersByStatusResponseDto;
 import com.aryan.fulfillx.dto.response.ShippingCostAnalysisResponseDto;
+import com.aryan.fulfillx.dto.response.ShippingCostTrendResponseDto;
 import com.aryan.fulfillx.dto.response.WarehouseUtilizationResponseDto;
 import com.aryan.fulfillx.service.AnalyticsService;
+import com.aryan.fulfillx.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final DashboardService dashboardService;
 
     @GetMapping("/analytics")
     @Operation(summary = "Get platform analytics summary", description = "Returns high-level KPIs across orders, inventory, and shipping")
@@ -78,5 +82,19 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<ShippingCostAnalysisResponseDto>> getShippingCostAnalysis() {
         log.info("Fetching shipping cost analysis");
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getShippingCostAnalysis()));
+    }
+
+    @GetMapping("/analytics/orders-by-status")
+    @Operation(summary = "Get order counts by status", description = "Returns order volume grouped by fulfillment status")
+    public ResponseEntity<ApiResponse<OrdersByStatusResponseDto>> getOrdersByStatus() {
+        log.info("Fetching orders by status");
+        return ResponseEntity.ok(ApiResponse.success(dashboardService.getOrdersByStatus()));
+    }
+
+    @GetMapping("/analytics/shipping-cost-trend")
+    @Operation(summary = "Get shipping cost trend", description = "Returns daily average shipping cost over recent allocations")
+    public ResponseEntity<ApiResponse<ShippingCostTrendResponseDto>> getShippingCostTrend() {
+        log.info("Fetching shipping cost trend");
+        return ResponseEntity.ok(ApiResponse.success(dashboardService.getShippingCostTrend()));
     }
 }

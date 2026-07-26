@@ -2,6 +2,7 @@ package com.aryan.fulfillx.repository;
 
 import com.aryan.fulfillx.entity.Allocation;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -63,4 +64,15 @@ public interface AllocationRepository extends JpaRepository<Allocation, UUID> {
             ) split_shipments
             """, nativeQuery = true)
     Long countSplitShipments();
+
+    @Query(value = """
+            SELECT CAST(created_at AS date) AS trend_date,
+                   COALESCE(AVG(shipping_cost), 0) AS average_shipping_cost,
+                   COUNT(*) AS allocation_count
+            FROM allocations
+            GROUP BY CAST(created_at AS date)
+            ORDER BY trend_date ASC
+            LIMIT 30
+            """, nativeQuery = true)
+    List<Object[]> findShippingCostTrend();
 }

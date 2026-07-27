@@ -3,7 +3,6 @@ package com.aryan.fulfillx.repository.spec;
 import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.request.InventoryFilterRequest;
 import com.aryan.fulfillx.entity.Inventory;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +18,6 @@ public final class InventorySpecifications {
         return (root, query, criteriaBuilder) -> {
             if (filter == null) {
                 return criteriaBuilder.conjunction();
-            }
-
-            root.fetch("warehouse", JoinType.LEFT);
-            root.fetch("product", JoinType.LEFT);
-            if (query != null) {
-                query.distinct(true);
             }
 
             List<Predicate> predicates = new ArrayList<>();

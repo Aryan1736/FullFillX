@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, ScrollRestoration } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
 
 import { ConfirmDialogProvider } from './components/common/ConfirmDialogProvider'
 import { ToastProvider } from './components/common/ToastProvider'
@@ -21,7 +21,6 @@ function App() {
       <BrowserRouter>
         <ToastProvider>
           <ConfirmDialogProvider>
-            <ScrollRestoration getKey={(location) => location.pathname} />
             <AppRoutes />
           </ConfirmDialogProvider>
         </ToastProvider>

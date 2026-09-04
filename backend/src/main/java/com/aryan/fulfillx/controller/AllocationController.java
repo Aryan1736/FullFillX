@@ -1,12 +1,14 @@
 package com.aryan.fulfillx.controller;
 
 import com.aryan.fulfillx.config.OpenApiExamples;
+import com.aryan.fulfillx.dto.request.AllocationExecutionRequest;
 import com.aryan.fulfillx.dto.request.AllocationFilterRequest;
 import com.aryan.fulfillx.dto.request.AllocationRequest;
 import com.aryan.fulfillx.dto.response.AllocationDetailResponse;
 import com.aryan.fulfillx.dto.response.AllocationResponse;
 import com.aryan.fulfillx.dto.response.ApiResponse;
 import com.aryan.fulfillx.dto.response.PageResponse;
+import com.aryan.fulfillx.service.AllocationExecutionService;
 import com.aryan.fulfillx.service.AllocationHistoryService;
 import com.aryan.fulfillx.service.AllocationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +47,35 @@ public class AllocationController {
 
     private final AllocationService allocationService;
     private final AllocationHistoryService allocationHistoryService;
+    private final AllocationExecutionService allocationExecutionService;
+
+    @PostMapping("/execute")
+    @Operation(
+            summary = "Execute an allocation",
+            description = "Executes and commits an optimized fulfillment allocation, reserving inventory, updating warehouse loads, and setting order status to ALLOCATED")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = AllocationExecutionRequest.class),
+                    examples = @ExampleObject(name = "Execution request", value = OpenApiExamples.ALLOCATION_EXECUTION_REQUEST)))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "201",
+                description = "Allocation executed and persisted",
+                content = @Content(
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
+                        examples = @ExampleObject(name = "Executed allocation", value = OpenApiExamples.ALLOCATION_RESPONSE))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request", ref = "#/components/responses/BadRequest"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Order, warehouse, or product not found", ref = "#/components/responses/NotFound"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Inventory conflict or order already allocated", ref = "#/components/responses/Conflict")
+    })
+    public ResponseEntity<ApiResponse<AllocationResponse>> execute(@Valid @RequestBody AllocationExecutionRequest request) {
+        log.info("Executing allocation for order {}", request.getOrderId());
+        AllocationResponse response = allocationExecutionService.execute(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created("Allocation executed successfully", response));
+    }
 
     @PostMapping
     @Operation(summary = "Create an allocation", description = "Persists a fulfillment allocation for an order")

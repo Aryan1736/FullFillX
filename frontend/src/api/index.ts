@@ -1,7 +1,7 @@
 export { api } from '../services/api'
-export { fetchAllocationById, fetchAllocations } from './allocationApi'
+export { fetchAllocationById, fetchAllocations, executeAllocation } from './allocationApi'
 export { fetchCustomerById, fetchCustomers } from './customerApi'
-export { fetchCustomerOrderById, fetchCustomerOrders } from './customerOrderApi'
+export { fetchCustomerOrderById, fetchCustomerOrders, createCustomerOrder } from './customerOrderApi'
 export { runOptimization } from './optimizationApi'
 export { fetchProducts } from './productApi'
 export {

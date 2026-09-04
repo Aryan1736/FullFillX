@@ -9,6 +9,7 @@ import com.aryan.fulfillx.repository.AllocationRepository;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import com.aryan.fulfillx.service.DashboardService;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -67,8 +68,8 @@ public class DashboardServiceImpl implements DashboardService {
         List<ShippingCostTrendPointDto> trend = allocationRepository.findShippingCostTrend().stream()
                 .map(row -> ShippingCostTrendPointDto.builder()
                         .date(toLocalDate(row[0]))
-                        .averageShippingCost((BigDecimal) row[1])
-                        .allocationCount((Long) row[2])
+                        .averageShippingCost(toBigDecimal(row[1]))
+                        .allocationCount(toLong(row[2]))
                         .build())
                 .toList();
 
@@ -78,6 +79,9 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private LocalDate toLocalDate(Object value) {
+        if (value == null) {
+            return null;
+        }
         if (value instanceof LocalDate localDate) {
             return localDate;
         }
@@ -85,5 +89,40 @@ public class DashboardServiceImpl implements DashboardService {
             return sqlDate.toLocalDate();
         }
         throw new IllegalArgumentException("Unsupported date type: " + value.getClass().getName());
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
+        }
+        if (value instanceof BigInteger bigInteger) {
+            return new BigDecimal(bigInteger);
+        }
+        if (value instanceof Number number) {
+            if (value instanceof Double || value instanceof Float) {
+                return BigDecimal.valueOf(number.doubleValue());
+            }
+            return BigDecimal.valueOf(number.longValue());
+        }
+        if (value instanceof String string) {
+            return new BigDecimal(string);
+        }
+        throw new IllegalArgumentException("Unsupported numeric type for BigDecimal conversion: " + value.getClass().getName());
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String string) {
+            return Long.valueOf(string);
+        }
+        throw new IllegalArgumentException("Unsupported numeric type for Long conversion: " + value.getClass().getName());
     }
 }

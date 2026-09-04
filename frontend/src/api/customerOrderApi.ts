@@ -59,3 +59,16 @@ export async function fetchCustomerOrderById(id: string): Promise<CustomerOrder>
   const { data } = await api.get<ApiResponse<Record<string, unknown>>>(`/customer-orders/${id}`)
   return mapCustomerOrder(data.data)
 }
+
+export type CreateCustomerOrderPayload = {
+  customerId: string
+  totalItems: number
+  orderItems: { productId: string; quantity: number }[]
+}
+
+export async function createCustomerOrder(
+  payload: CreateCustomerOrderPayload,
+): Promise<CustomerOrder> {
+  const { data } = await api.post<ApiResponse<Record<string, unknown>>>('/customer-orders', payload)
+  return mapCustomerOrder(data.data)
+}

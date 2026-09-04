@@ -18,6 +18,10 @@ public interface AllocationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "order", ignore = true)
     @Mapping(target = "allocationItems", ignore = true)
+    @Mapping(target = "strategyName", ignore = true)
+    @Mapping(target = "scoreBreakdown", ignore = true)
+    @Mapping(target = "reasoning", ignore = true)
+    @Mapping(target = "warehouseSnapshots", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Allocation toEntity(AllocationRequest request);
@@ -26,6 +30,10 @@ public interface AllocationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "order", ignore = true)
     @Mapping(target = "allocationItems", ignore = true)
+    @Mapping(target = "strategyName", ignore = true)
+    @Mapping(target = "scoreBreakdown", ignore = true)
+    @Mapping(target = "reasoning", ignore = true)
+    @Mapping(target = "warehouseSnapshots", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(AllocationRequest request, @MappingTarget Allocation allocation);

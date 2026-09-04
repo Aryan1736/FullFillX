@@ -82,6 +82,56 @@ public final class OpenApiExamples {
             }
             """;
 
+    public static final String ALLOCATION_EXECUTION_REQUEST = """
+            {
+              "orderId": "44444444-4444-4444-4444-444444444444",
+              "optimizationResult": {
+                "strategyName": "WEIGHTED_GREEDY",
+                "warehouseCandidates": [
+                  {
+                    "warehouseId": "33333333-3333-3333-3333-333333333333",
+                    "warehouseName": "Kolkata Fulfillment Center",
+                    "allocatedQuantitiesByProductId": {
+                      "22222222-2222-2222-2222-222222222222": 2
+                    },
+                    "shippingCost": 245.75,
+                    "estimatedDeliveryHours": 36,
+                    "scoreBreakdown": {
+                      "distanceScore": 0.85,
+                      "shippingCostScore": 0.90,
+                      "inventoryScore": 0.95,
+                      "warehouseLoadScore": 0.80,
+                      "totalScore": 87.5
+                    }
+                  }
+                ],
+                "optimizationScore": 87.5,
+                "totalShippingCost": 245.75,
+                "estimatedDeliveryHours": 36,
+                "scoreBreakdown": {
+                  "shippingCostScore": 0.90,
+                  "etaScore": 0.85,
+                  "warehouseLoadScore": 0.80,
+                  "splitShipmentPenalty": 0.0,
+                  "totalScore": 87.5
+                },
+                "reasoning": [
+                  {
+                    "decision": "SELECTED",
+                    "warehouseId": "33333333-3333-3333-3333-333333333333",
+                    "warehouseName": "Kolkata Fulfillment Center",
+                    "productId": "22222222-2222-2222-2222-222222222222",
+                    "message": "Selected warehouse with lowest distance and sufficient stock"
+                  }
+                ],
+                "selectedWarehouses": [
+                  "33333333-3333-3333-3333-333333333333"
+                ],
+                "estimatedSavings": 45.00
+              }
+            }
+            """;
+
     public static final String OPTIMIZATION_REQUEST = """
             {
               "orderId": "44444444-4444-4444-4444-444444444444",

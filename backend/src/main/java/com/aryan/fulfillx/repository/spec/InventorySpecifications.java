@@ -3,6 +3,7 @@ package com.aryan.fulfillx.repository.spec;
 import com.aryan.fulfillx.constant.InventoryConstants;
 import com.aryan.fulfillx.dto.request.InventoryFilterRequest;
 import com.aryan.fulfillx.entity.Inventory;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,14 @@ public final class InventorySpecifications {
 
     public static Specification<Inventory> fromFilter(InventoryFilterRequest filter) {
         return (root, query, criteriaBuilder) -> {
+            if (query != null
+                    && Long.class != query.getResultType()
+                    && long.class != query.getResultType()) {
+                root.fetch("warehouse", JoinType.LEFT);
+                root.fetch("product", JoinType.LEFT);
+                query.distinct(true);
+            }
+
             if (filter == null) {
                 return criteriaBuilder.conjunction();
             }
@@ -23,25 +32,38 @@ public final class InventorySpecifications {
             List<Predicate> predicates = new ArrayList<>();
 
             if (Boolean.TRUE.equals(filter.getLowStock())) {
-                predicates.add(criteriaBuilder.greaterThan(root.get("availableQuantity"), 0));
+                predicates.add(criteriaBuilder.greaterThan(
+                        root.get("availableQuantity"), 0));
                 predicates.add(criteriaBuilder.lessThan(
-                        root.get("availableQuantity"), InventoryConstants.LOW_STOCK_THRESHOLD));
+                        root.get("availableQuantity"),
+                        InventoryConstants.LOW_STOCK_THRESHOLD));
             }
 
             if (filter.getProductId() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("product").get("id"), filter.getProductId()));
+                predicates.add(criteriaBuilder.equal(
+                        root.get("product").get("id"),
+                        filter.getProductId()));
             }
 
             if (filter.getWarehouseId() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("warehouse").get("id"), filter.getWarehouseId()));
+                predicates.add(criteriaBuilder.equal(
+                        root.get("warehouse").get("id"),
+                        filter.getWarehouseId()));
             }
 
             if (StringUtils.hasText(filter.getSearch())) {
                 String searchPattern = "%" + filter.getSearch().trim().toLowerCase() + "%";
+
                 predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("name")), searchPattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("category")), searchPattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("warehouse").get("name")), searchPattern)));
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("product").get("name")),
+                                searchPattern),
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("product").get("category")),
+                                searchPattern),
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("warehouse").get("name")),
+                                searchPattern)));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));

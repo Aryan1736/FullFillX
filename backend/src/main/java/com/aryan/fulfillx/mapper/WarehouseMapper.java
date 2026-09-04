@@ -16,6 +16,7 @@ public interface WarehouseMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "inventories", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "active", expression = "java(request.getActive() != null ? request.getActive() : true)")
@@ -24,6 +25,7 @@ public interface WarehouseMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "inventories", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(WarehouseRequest request, @MappingTarget Warehouse warehouse);

@@ -2,17 +2,22 @@ package com.aryan.fulfillx.service.impl;
 
 import com.aryan.fulfillx.algorithm.model.OptimizationResult;
 import com.aryan.fulfillx.algorithm.model.WarehouseCandidate;
+import com.aryan.fulfillx.dto.request.AllocationExecutionRequest;
 import com.aryan.fulfillx.dto.response.AllocationResponse;
+import com.aryan.fulfillx.dto.response.OptimizationResponseDto;
 import com.aryan.fulfillx.entity.Allocation;
 import com.aryan.fulfillx.entity.AllocationItem;
 import com.aryan.fulfillx.entity.CustomerOrder;
 import com.aryan.fulfillx.entity.Inventory;
+import com.aryan.fulfillx.entity.OrderStatus;
 import com.aryan.fulfillx.entity.Warehouse;
 import com.aryan.fulfillx.exception.BadRequestException;
 import com.aryan.fulfillx.exception.InsufficientInventoryException;
+import com.aryan.fulfillx.exception.OrderAlreadyAllocatedException;
 import com.aryan.fulfillx.exception.ResourceNotFoundException;
 import com.aryan.fulfillx.mapper.AllocationMapper;
 import com.aryan.fulfillx.mapper.AllocationSnapshotMapper;
+import com.aryan.fulfillx.mapper.OptimizationMapper;
 import com.aryan.fulfillx.repository.AllocationRepository;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import com.aryan.fulfillx.repository.InventoryRepository;
@@ -26,6 +31,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +46,24 @@ public class AllocationExecutionServiceImpl implements AllocationExecutionServic
     private final CustomerOrderRepository customerOrderRepository;
     private final AllocationMapper allocationMapper;
     private final AllocationSnapshotMapper allocationSnapshotMapper;
+    private final OptimizationMapper optimizationMapper;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AllocationResponse execute(AllocationExecutionRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        if (request.getOrderId() == null) {
+            throw new BadRequestException("Order ID must not be null");
+        }
+
+        OptimizationResponseDto optimizationResultDto = request.resolveOptimizationResult();
+        if (optimizationResultDto == null) {
+            throw new BadRequestException("Optimization result must not be null");
+        }
+
+        OptimizationResult optimizationResult = optimizationMapper.toResult(optimizationResultDto);
+        return execute(request.getOrderId(), optimizationResult);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -48,6 +72,14 @@ public class AllocationExecutionServiceImpl implements AllocationExecutionServic
         Objects.requireNonNull(optimizationResult, "optimizationResult must not be null");
 
         CustomerOrder order = findCustomerOrderOrThrow(orderId);
+        if (order.getStatus() == OrderStatus.ALLOCATED || allocationRepository.existsByOrder_Id(orderId)) {
+            throw new OrderAlreadyAllocatedException(orderId);
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException(
+                    String.format("Cannot execute allocation for order %s with status %s", orderId, order.getStatus()));
+        }
+
         List<AllocationLine> allocationLines = flattenAllocationLines(optimizationResult);
         if (allocationLines.isEmpty()) {
             throw new BadRequestException("Optimization result contains no allocation items to execute");
@@ -63,7 +95,23 @@ public class AllocationExecutionServiceImpl implements AllocationExecutionServic
         Allocation allocation = buildAllocation(order, optimizationResult, quantitiesByInventoryKey, inventories);
         updateWarehouseLoads(allocationLines);
 
-        Allocation savedAllocation = allocationRepository.save(allocation);
+        Allocation savedAllocation;
+        try {
+            savedAllocation = allocationRepository.saveAndFlush(allocation);
+            order.setStatus(OrderStatus.ALLOCATED);
+            customerOrderRepository.saveAndFlush(order);
+        } catch (DataIntegrityViolationException ex) {
+            log.warn(
+                    "event=allocation_execution_conflict orderId={} message={}",
+                    orderId,
+                    ex.getMessage());
+            throw new OrderAlreadyAllocatedException(orderId);
+        }
+        log.info(
+                "event=order_status_updated orderId={} status={}",
+                orderId,
+                OrderStatus.ALLOCATED);
+
         log.info(
                 "event=allocation_persisted allocationId={} orderId={} itemCount={} optimizationScore={} strategy={}",
                 savedAllocation.getId(),

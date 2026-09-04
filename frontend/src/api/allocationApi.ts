@@ -181,3 +181,34 @@ export async function fetchAllocationById(id: string): Promise<Allocation> {
   const { data } = await api.get<ApiResponse<Record<string, unknown>>>(`/allocations/${id}`)
   return mapAllocation(data.data)
 }
+
+export type AllocationExecutionRequest = {
+  orderId: string
+  optimizationResult: Record<string, unknown>
+}
+
+export type AllocationExecutionResponse = {
+  id: string
+  orderId: string
+  optimizationScore: number
+  shippingCost: number
+  estimatedDeliveryHours: number
+  createdAt: string
+  updatedAt: string
+}
+
+export async function executeAllocation(
+  payload: AllocationExecutionRequest,
+): Promise<AllocationExecutionResponse> {
+  const { data } = await api.post<ApiResponse<Record<string, unknown>>>('/allocations/execute', payload)
+  const source = data.data ?? {}
+  return {
+    id: String(source.id ?? ''),
+    orderId: String(source.orderId ?? ''),
+    optimizationScore: toNumber(source.optimizationScore),
+    shippingCost: toNumber(source.shippingCost),
+    estimatedDeliveryHours: toNumber(source.estimatedDeliveryHours),
+    createdAt: String(source.createdAt ?? ''),
+    updatedAt: String(source.updatedAt ?? ''),
+  }
+}

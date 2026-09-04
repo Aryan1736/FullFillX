@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
+import { createCustomerOrder } from '../api/customerOrderApi'
+import { executeAllocation } from '../api/allocationApi'
 import { PageHeader } from '../components/common/PageHeader'
 import { useToast } from '../components/common/ToastProvider'
 import { OptimizationForm } from '../components/optimization/OptimizationForm'
@@ -21,7 +24,11 @@ import type { OptimizationFormValues } from '../types/optimization'
 
 export function OptimizationPage() {
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [lastFormValues, setLastFormValues] = useState<OptimizationFormValues | null>(null)
+  const [isExecuting, setIsExecuting] = useState(false)
+  const [isExecuted, setIsExecuted] = useState(false)
 
   const {
     data: customersPage,
@@ -62,6 +69,8 @@ export function OptimizationPage() {
 
   const handleSubmit = (values: OptimizationFormValues) => {
     setErrorMessage(null)
+    setLastFormValues(values)
+    setIsExecuted(false)
 
     optimizationMutation.mutate(values, {
       onSuccess: () => {
@@ -73,6 +82,47 @@ export function OptimizationPage() {
         showToast(message, { variant: 'error', durationMs: 6000 })
       },
     })
+  }
+
+  const handleExecuteAllocation = async () => {
+    if (!optimizationMutation.data || !lastFormValues) {
+      return
+    }
+
+    try {
+      setIsExecuting(true)
+      setErrorMessage(null)
+
+      const totalItems = lastFormValues.productLines.reduce((sum, line) => sum + line.quantity, 0)
+      const order = await createCustomerOrder({
+        customerId: lastFormValues.customerId,
+        totalItems,
+        orderItems: lastFormValues.productLines,
+      })
+
+      await executeAllocation({
+        orderId: order.id,
+        optimizationResult: optimizationMutation.data as unknown as Record<string, unknown>,
+      })
+
+      setIsExecuted(true)
+      showToast('Allocation executed and committed successfully.', { variant: 'success' })
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['allocations'] }),
+        queryClient.invalidateQueries({ queryKey: ['orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouses'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ])
+    } catch (error) {
+      const message = getErrorMessage(error)
+      setErrorMessage(message)
+      showToast(message, { variant: 'error', durationMs: 6000 })
+    } finally {
+      setIsExecuting(false)
+    }
   }
 
   const handleRetryOptions = () => {
@@ -112,7 +162,13 @@ export function OptimizationPage() {
             <OptimizationResultsPlaceholder isRunning />
           ) : result ? (
             <>
-              <OptimizationSummary result={result} warehouseNamesById={warehouseNamesById} />
+              <OptimizationSummary
+                result={result}
+                warehouseNamesById={warehouseNamesById}
+                onExecute={handleExecuteAllocation}
+                isExecuting={isExecuting}
+                isExecuted={isExecuted}
+              />
               <ScoreBreakdownCards scoreBreakdown={result.scoreBreakdown} />
               <ReasoningTimeline reasoning={result.reasoning} />
               <WarehouseAllocationTable

@@ -41,6 +41,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.aryan.fulfillx.dto.request.AllocationExecutionRequest;
+import com.aryan.fulfillx.dto.response.OptimizationResponseDto;
+import com.aryan.fulfillx.dto.response.WarehouseCandidateDto;
+import com.aryan.fulfillx.entity.OrderStatus;
+import com.aryan.fulfillx.exception.OrderAlreadyAllocatedException;
+import com.aryan.fulfillx.mapper.OptimizationMapper;
+import org.springframework.dao.DataIntegrityViolationException;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AllocationExecutionService")
 class AllocationExecutionServiceImplTest {
@@ -68,6 +76,9 @@ class AllocationExecutionServiceImplTest {
 
     @Mock
     private AllocationSnapshotMapper allocationSnapshotMapper;
+
+    @Mock
+    private OptimizationMapper optimizationMapper;
 
     @InjectMocks
     private AllocationExecutionServiceImpl service;
@@ -109,7 +120,7 @@ class AllocationExecutionServiceImplTest {
         when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
         when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
         when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
-        when(allocationRepository.save(any())).thenAnswer(invocation -> {
+        when(allocationRepository.saveAndFlush(any())).thenAnswer(invocation -> {
             Allocation allocation = invocation.getArgument(0);
             allocation.setId(UUID.randomUUID());
             return allocation;
@@ -125,7 +136,7 @@ class AllocationExecutionServiceImplTest {
         assertEquals(13, nearWarehouse.getCurrentLoad());
 
         ArgumentCaptor<Allocation> allocationCaptor = ArgumentCaptor.forClass(Allocation.class);
-        verify(allocationRepository).save(allocationCaptor.capture());
+        verify(allocationRepository).saveAndFlush(allocationCaptor.capture());
         Allocation savedAllocation = allocationCaptor.getValue();
         assertEquals(ORDER_ID, savedAllocation.getOrder().getId());
         assertEquals(1, savedAllocation.getAllocationItems().size());
@@ -151,7 +162,7 @@ class AllocationExecutionServiceImplTest {
         when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
         when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
         when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
-        when(allocationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(allocationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(allocationMapper.toResponse(any())).thenReturn(AllocationResponse.builder().build());
 
         service.execute(ORDER_ID, optimizationResult);
@@ -195,7 +206,7 @@ class AllocationExecutionServiceImplTest {
                 BadRequestException.class, () -> service.execute(ORDER_ID, emptyResult));
 
         assertEquals("Optimization result contains no allocation items to execute", exception.getMessage());
-        verify(allocationRepository, never()).save(any());
+        verify(allocationRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -211,7 +222,7 @@ class AllocationExecutionServiceImplTest {
         assertThrows(
                 InsufficientInventoryException.class,
                 () -> service.execute(ORDER_ID, optimizationResult));
-        verify(allocationRepository, never()).save(any());
+        verify(allocationRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -235,7 +246,7 @@ class AllocationExecutionServiceImplTest {
                         WAREHOUSE_NEAR_ID,
                         PRODUCT_A_ID),
                 exception.getMessage());
-        verify(allocationRepository, never()).save(any());
+        verify(allocationRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -256,7 +267,7 @@ class AllocationExecutionServiceImplTest {
         assertThrows(
                 ResourceNotFoundException.class,
                 () -> service.execute(ORDER_ID, optimizationResult));
-        verify(allocationRepository, never()).save(any());
+        verify(allocationRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -277,7 +288,7 @@ class AllocationExecutionServiceImplTest {
         when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
         when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
         when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
-        when(allocationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(allocationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(allocationMapper.toResponse(any())).thenReturn(AllocationResponse.builder().build());
 
         service.execute(ORDER_ID, optimizationResult);
@@ -301,6 +312,161 @@ class AllocationExecutionServiceImplTest {
     @DisplayName("rejects null optimization result")
     void execute_nullOptimizationResult_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> service.execute(ORDER_ID, null));
+    }
+
+    @Test
+    @DisplayName("throws OrderAlreadyAllocatedException when order status is ALLOCATED")
+    void execute_orderAlreadyAllocated_throwsOrderAlreadyAllocatedException() {
+        order.setStatus(OrderStatus.ALLOCATED);
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+
+        assertThrows(
+                OrderAlreadyAllocatedException.class,
+                () -> service.execute(ORDER_ID, optimizationResult(
+                        candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 1)))));
+        verify(allocationRepository, never()).saveAndFlush(any());
+        verify(inventoryRepository, never()).findByWarehouse_IdAndProduct_Id(any(), any());
+    }
+
+    @Test
+    @DisplayName("throws OrderAlreadyAllocatedException when an allocation already exists for order")
+    void execute_existingAllocationRecord_throwsOrderAlreadyAllocatedException() {
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        when(allocationRepository.existsByOrder_Id(ORDER_ID)).thenReturn(true);
+
+        assertThrows(
+                OrderAlreadyAllocatedException.class,
+                () -> service.execute(ORDER_ID, optimizationResult(
+                        candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 1)))));
+        verify(allocationRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("throws BadRequestException when order is in a non-PENDING status like CANCELLED")
+    void execute_nonPendingOrderStatus_throwsBadRequestException() {
+        order.setStatus(OrderStatus.CANCELLED);
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> service.execute(ORDER_ID, optimizationResult(
+                        candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 1)))));
+        assertEquals("Cannot execute allocation for order " + ORDER_ID + " with status CANCELLED", ex.getMessage());
+        verify(allocationRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("updates order status to ALLOCATED and saves order on successful execution")
+    void execute_orderStatusTransitionToAllocated() {
+        OptimizationResult optimizationResult = optimizationResult(
+                candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 2)));
+        Inventory inventory = inventory(nearWarehouse, productA, 10, 0);
+
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        when(inventoryRepository.findByWarehouse_IdAndProduct_Id(WAREHOUSE_NEAR_ID, PRODUCT_A_ID))
+                .thenReturn(Optional.of(inventory));
+        when(warehouseRepository.findById(WAREHOUSE_NEAR_ID)).thenReturn(Optional.of(nearWarehouse));
+        when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
+        when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
+        when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
+        when(allocationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(allocationMapper.toResponse(any())).thenReturn(AllocationResponse.builder().build());
+
+        service.execute(ORDER_ID, optimizationResult);
+
+        assertEquals(OrderStatus.ALLOCATED, order.getStatus());
+        verify(customerOrderRepository).saveAndFlush(order);
+    }
+
+    @Test
+    @DisplayName("throws OrderAlreadyAllocatedException when saveAndFlush violates database unique constraint")
+    void execute_dataIntegrityViolationOnSave_throwsOrderAlreadyAllocatedException() {
+        OptimizationResult optimizationResult = optimizationResult(
+                candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 2)));
+        Inventory inventory = inventory(nearWarehouse, productA, 10, 0);
+
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        when(inventoryRepository.findByWarehouse_IdAndProduct_Id(WAREHOUSE_NEAR_ID, PRODUCT_A_ID))
+                .thenReturn(Optional.of(inventory));
+        when(warehouseRepository.findById(WAREHOUSE_NEAR_ID)).thenReturn(Optional.of(nearWarehouse));
+        when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
+        when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
+        when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
+        when(allocationRepository.saveAndFlush(any()))
+                .thenThrow(new DataIntegrityViolationException(
+                        "could not execute statement; SQL [n/a]; constraint [uk_allocations_order_id]"));
+
+        assertThrows(
+                OrderAlreadyAllocatedException.class,
+                () -> service.execute(ORDER_ID, optimizationResult));
+    }
+
+    @Test
+    @DisplayName("executes successfully via AllocationExecutionRequest DTO")
+    void execute_withAllocationExecutionRequest_success() {
+        OptimizationResult optimizationResult = optimizationResult(
+                candidate(WAREHOUSE_NEAR_ID, "Near Warehouse", Map.of(PRODUCT_A_ID, 2)));
+        Inventory inventory = inventory(nearWarehouse, productA, 10, 0);
+
+        OptimizationResponseDto responseDto = OptimizationResponseDto.builder()
+                .strategyName("WEIGHTED_GREEDY")
+                .warehouseCandidates(List.of(
+                        WarehouseCandidateDto.builder()
+                                .warehouseId(WAREHOUSE_NEAR_ID)
+                                .warehouseName("Near Warehouse")
+                                .allocatedQuantitiesByProductId(Map.of(PRODUCT_A_ID, 2))
+                                .shippingCost(BigDecimal.TEN)
+                                .estimatedDeliveryHours(24)
+                                .build()))
+                .optimizationScore(BigDecimal.valueOf(12.5))
+                .totalShippingCost(BigDecimal.valueOf(25.0))
+                .estimatedDeliveryHours(24)
+                .build();
+
+        AllocationExecutionRequest request = AllocationExecutionRequest.builder()
+                .orderId(ORDER_ID)
+                .optimizationResult(responseDto)
+                .build();
+
+        when(optimizationMapper.toResult(responseDto)).thenReturn(optimizationResult);
+        when(customerOrderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        when(inventoryRepository.findByWarehouse_IdAndProduct_Id(WAREHOUSE_NEAR_ID, PRODUCT_A_ID))
+                .thenReturn(Optional.of(inventory));
+        when(warehouseRepository.findById(WAREHOUSE_NEAR_ID)).thenReturn(Optional.of(nearWarehouse));
+        when(allocationSnapshotMapper.toPlanScoreBreakdownSnapshot(any())).thenReturn(null);
+        when(allocationSnapshotMapper.toReasoningSnapshots(any())).thenReturn(List.of());
+        when(allocationSnapshotMapper.toWarehouseSnapshots(any())).thenReturn(List.of());
+        when(allocationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(allocationMapper.toResponse(any())).thenReturn(AllocationResponse.builder().orderId(ORDER_ID).build());
+
+        AllocationResponse response = service.execute(request);
+
+        assertNotNull(response);
+        assertEquals(ORDER_ID, response.getOrderId());
+        assertEquals(OrderStatus.ALLOCATED, order.getStatus());
+        verify(customerOrderRepository).saveAndFlush(order);
+    }
+
+    @Test
+    @DisplayName("throws BadRequestException when AllocationExecutionRequest has null orderId")
+    void execute_requestMissingOrderId_throwsBadRequestException() {
+        AllocationExecutionRequest request = AllocationExecutionRequest.builder()
+                .orderId(null)
+                .build();
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.execute(request));
+        assertEquals("Order ID must not be null", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("throws BadRequestException when AllocationExecutionRequest has no optimization result")
+    void execute_requestMissingOptimizationResult_throwsBadRequestException() {
+        AllocationExecutionRequest request = AllocationExecutionRequest.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.execute(request));
+        assertEquals("Optimization result must not be null", ex.getMessage());
     }
 
     private OptimizationResult optimizationResult(WarehouseCandidate... candidates) {

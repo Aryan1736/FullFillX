@@ -41,6 +41,8 @@ public interface AllocationRepository extends JpaRepository<Allocation, UUID>, J
     })
     Optional<Allocation> findTopByOrder_IdOrderByCreatedAtDesc(UUID orderId);
 
+    boolean existsByOrder_Id(UUID orderId);
+
     @EntityGraph(attributePaths = {
         "order",
         "allocationItems",

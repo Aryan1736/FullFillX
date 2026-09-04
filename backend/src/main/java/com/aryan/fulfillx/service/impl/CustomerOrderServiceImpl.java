@@ -17,7 +17,11 @@ import com.aryan.fulfillx.repository.ProductRepository;
 import com.aryan.fulfillx.repository.spec.CustomerOrderSpecifications;
 import com.aryan.fulfillx.service.CustomerOrderService;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -88,11 +92,26 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     }
 
     private List<OrderItem> buildOrderItems(List<OrderItemRequest> itemRequests, CustomerOrder order) {
+        if (itemRequests == null || itemRequests.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> productIds = itemRequests.stream()
+                .map(OrderItemRequest::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Product> productMap = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
         return itemRequests.stream()
                 .map(itemRequest -> {
+                    Product product = productMap.get(itemRequest.getProductId());
+                    if (product == null) {
+                        throw new ResourceNotFoundException("Product", itemRequest.getProductId());
+                    }
                     OrderItem orderItem = orderItemMapper.toEntity(itemRequest);
                     orderItem.setOrder(order);
-                    orderItem.setProduct(findProductOrThrow(itemRequest.getProductId()));
+                    orderItem.setProduct(product);
                     return orderItem;
                 })
                 .toList();
@@ -106,10 +125,5 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private Customer findCustomerOrThrow(UUID id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", id));
-    }
-
-    private Product findProductOrThrow(UUID id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
     }
 }

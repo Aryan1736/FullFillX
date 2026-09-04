@@ -51,12 +51,32 @@ export type OptimizationReasoning = {
   message: string
 }
 
+export type CandidateScoreBreakdown = {
+  distanceScore?: number
+  shippingCostScore?: number
+  inventoryScore?: number
+  warehouseLoadScore?: number
+  totalScore?: number
+}
+
 export type WarehouseCandidate = {
   warehouseId: string
   warehouseName: string
   allocatedQuantitiesByProductId: Record<string, number>
   shippingCost: number
   estimatedDeliveryHours: number
+  scoreBreakdown?: CandidateScoreBreakdown
+}
+
+export type RankedCandidate = {
+  rank: number
+  warehouseId: string
+  warehouseName: string
+  score: number
+  isRecommended: boolean
+  shippingCost?: number
+  estimatedDeliveryHours?: number
+  reason?: string
 }
 
 export type OptimizationResult = {
@@ -68,15 +88,17 @@ export type OptimizationResult = {
   scoreBreakdown: PlanScoreBreakdown
   reasoning: OptimizationReasoning[]
   selectedWarehouses: string[]
-  estimatedSavings: number
+  estimatedSavings: number | null
 }
 
 export type OptimizationRunInput = {
   customerId: string
   productLines: OptimizationOrderLine[]
+  orderId?: string
 }
 
 export type OptimizationFormValues = {
   customerId: string
   productLines: OptimizationOrderLine[]
 }
+

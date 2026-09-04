@@ -11,12 +11,12 @@ const statusLabels: Record<OrderStatus, string> = {
 }
 
 const statusStyles: Record<OrderStatus, string> = {
-  PENDING: 'bg-amber-50 text-amber-800 ring-amber-200',
-  ALLOCATED: 'bg-sky-50 text-sky-800 ring-sky-200',
-  FULFILLING: 'bg-indigo-50 text-indigo-800 ring-indigo-200',
-  SHIPPED: 'bg-violet-50 text-violet-800 ring-violet-200',
-  DELIVERED: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  CANCELLED: 'bg-slate-100 text-slate-600 ring-slate-200',
+  PENDING: 'bg-[#D08A35]/15 text-[#D08A35] ring-1 ring-[#D08A35]/30',
+  ALLOCATED: 'bg-[#C4622D]/15 text-[#C4622D] ring-1 ring-[#C4622D]/30',
+  FULFILLING: 'bg-[#C4622D]/20 text-[#C4622D] ring-1 ring-[#C4622D]/40',
+  SHIPPED: 'bg-[#A1A1AA]/15 text-[#F4F4F5] ring-1 ring-[#262630]',
+  DELIVERED: 'bg-[#3FA66B]/15 text-[#3FA66B] ring-1 ring-[#3FA66B]/30',
+  CANCELLED: 'bg-[#1C1C21] text-[#71717A] ring-1 ring-[#262630]',
 }
 
 export function formatOrderStatus(status: OrderStatus): string {

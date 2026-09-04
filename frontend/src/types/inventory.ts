@@ -41,3 +41,5 @@ export type InventoryQueryParams = InventoryFilters & {
 }
 
 export const LOW_STOCK_THRESHOLD = 50
+
+export type StockStatus = 'HEALTHY' | 'LOW_STOCK' | 'OUT_OF_STOCK'

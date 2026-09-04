@@ -5,13 +5,16 @@ import com.aryan.fulfillx.dto.response.OrdersByStatusResponseDto;
 import com.aryan.fulfillx.dto.response.ShippingCostTrendPointDto;
 import com.aryan.fulfillx.dto.response.ShippingCostTrendResponseDto;
 import com.aryan.fulfillx.entity.OrderStatus;
+import com.aryan.fulfillx.exception.BadRequestException;
 import com.aryan.fulfillx.repository.AllocationRepository;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import com.aryan.fulfillx.service.DashboardService;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -64,8 +67,34 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional(readOnly = true)
     public ShippingCostTrendResponseDto getShippingCostTrend() {
         log.debug("Fetching shipping cost trend");
+        return mapRowsToTrend(allocationRepository.findShippingCostTrend());
+    }
 
-        List<ShippingCostTrendPointDto> trend = allocationRepository.findShippingCostTrend().stream()
+    @Override
+    @Transactional(readOnly = true)
+    public ShippingCostTrendResponseDto getShippingCostTrend(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null && endDate == null) {
+            return getShippingCostTrend();
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new BadRequestException("Both startDate and endDate must be provided for range filtering");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("Start date cannot be after end date");
+        }
+
+        log.debug("Fetching shipping cost trend between {} and {}", startDate, endDate);
+
+        Instant startInstant = startDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant endInstant = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        return mapRowsToTrend(allocationRepository.findShippingCostTrendBetween(startInstant, endInstant));
+    }
+
+    private ShippingCostTrendResponseDto mapRowsToTrend(List<Object[]> rows) {
+        List<ShippingCostTrendPointDto> trend = rows.stream()
                 .map(row -> ShippingCostTrendPointDto.builder()
                         .date(toLocalDate(row[0]))
                         .averageShippingCost(toBigDecimal(row[1]))

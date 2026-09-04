@@ -37,6 +37,7 @@ export async function fetchCustomerOrders(
     params: {
       page: params.page,
       size: params.size,
+      status: params.status || undefined,
       sort: 'createdAt,desc',
     },
   })

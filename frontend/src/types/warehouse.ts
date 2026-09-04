@@ -15,6 +15,18 @@ export type Warehouse = {
   updatedAt: string
 }
 
+export type CreateWarehouseRequest = {
+  name: string
+  city: string
+  latitude: number
+  longitude: number
+  capacity: number
+  currentLoad: number
+  active?: boolean
+}
+
+export type UpdateWarehouseRequest = CreateWarehouseRequest
+
 export type PageResponse<T> = {
   content: T[]
   page: number
@@ -26,7 +38,7 @@ export type PageResponse<T> = {
   sort: string
 }
 
-export type WarehouseSortField = 'name' | 'city' | 'capacity' | 'currentLoad' | 'active'
+export type WarehouseSortField = 'name' | 'city' | 'capacity' | 'currentLoad' | 'active' | 'utilization'
 
 export type WarehouseSort = {
   field: WarehouseSortField

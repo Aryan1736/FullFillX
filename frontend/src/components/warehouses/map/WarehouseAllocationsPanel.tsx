@@ -1,4 +1,14 @@
-import { AlertCircle, History, Loader2, Package, Split, Target } from 'lucide-react'
+import {
+  AlertCircle,
+  Clock,
+  History,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  Split,
+  Target,
+  Warehouse,
+} from 'lucide-react'
 
 import {
   formatAllocationCurrency,
@@ -9,7 +19,7 @@ import {
 } from '../../../services/allocationService'
 import type { Allocation } from '../../../types/allocation'
 import type { WarehouseMapLocation } from '../../../types/warehouseMap'
-import { cn } from '../../../utils/cn'
+import { ProgressBar } from '../../common/ProgressBar'
 
 type WarehouseAllocationsPanelProps = {
   selectedLocation: WarehouseMapLocation | null
@@ -33,35 +43,41 @@ function AllocationListItem({
     <button
       type="button"
       onClick={() => onSelect?.(allocation)}
-      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left transition-colors hover:border-slate-300 hover:bg-slate-50"
+      className="group w-full rounded-lg border border-[#262630] bg-[#1C1C21] p-3.5 text-left transition-all duration-200 hover:border-[#C4622D]/60 hover:bg-[#202027] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#C4622D]"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">
-            Order {formatShortId(allocation.orderId)}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-[#F4F4F5] group-hover:text-[#C4622D] transition-colors">
+              ORD-{formatShortId(allocation.orderId)}
+            </span>
+            {split ? (
+              <span className="inline-flex items-center gap-1 rounded border border-[#262630] bg-[#17171B] px-1.5 py-0.2 font-mono text-[10px] font-semibold text-[#A1A1AA]">
+                <Split className="size-2.5 text-[#C4622D]" />
+                Split Hub
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 flex items-center gap-1 font-mono text-[11px] text-[#71717A]">
+            <Clock className="size-3 text-[#71717A]" />
+            {formatAllocationDate(allocation.createdAt)}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">{formatAllocationDate(allocation.createdAt)}</p>
         </div>
-        {split ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
-            <Split className="size-3" aria-hidden="true" />
-            Split
+
+        <div className="text-right">
+          <span className="inline-flex items-center rounded border border-[#262630] bg-[#17171B] px-2 py-0.5 font-mono text-xs font-semibold text-[#3FA66B]">
+            Score: {formatAllocationScore(allocation.score)}
           </span>
-        ) : null}
+        </div>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div>
-          <dt className="text-slate-500">Score</dt>
-          <dd className="font-medium text-slate-900">{formatAllocationScore(allocation.score)}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">Shipping</dt>
-          <dd className="font-medium text-slate-900">
-            {formatAllocationCurrency(allocation.shippingCost)}
-          </dd>
-        </div>
-      </dl>
+      <div className="mt-2.5 flex items-center justify-between border-t border-[#202027] pt-2 text-xs">
+        <span className="font-mono text-[11px] text-[#71717A]">Shipping Freight</span>
+        <span className="flex items-center gap-0.5 font-mono font-semibold text-[#F4F4F5]">
+          <IndianRupee className="size-3 text-[#71717A]" />
+          {formatAllocationCurrency(allocation.shippingCost).replace('₹', '')}
+        </span>
+      </div>
     </button>
   )
 }
@@ -76,66 +92,93 @@ export function WarehouseAllocationsPanel({
 }: WarehouseAllocationsPanelProps) {
   if (!selectedLocation) {
     return (
-      <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-        <Package className="size-8 text-slate-400" aria-hidden="true" />
-        <p className="mt-3 text-sm font-medium text-slate-700">Select a warehouse</p>
-        <p className="mt-1 text-sm text-slate-500">
-          Click a marker to view related allocations and highlight partner warehouses.
+      <div className="flex h-full min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-[#262630] bg-[#17171B] p-6 text-center shadow-xl">
+        <div className="flex size-12 items-center justify-center rounded-xl border border-[#262630] bg-[#1C1C21] text-[#C4622D]">
+          <Warehouse className="size-6" aria-hidden="true" />
+        </div>
+        <p className="mt-3 font-display text-sm font-bold text-[#F4F4F5]">Select a Warehouse Node</p>
+        <p className="mt-1 max-w-xs text-xs text-[#A1A1AA] leading-relaxed">
+          Click any geographical marker to inspect live capacity, regional coordinates, and linked order fulfillment dispatches.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full min-h-[240px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Selected warehouse</p>
-        <h2 className="mt-1 text-base font-semibold text-slate-900">{selectedLocation.name}</h2>
-        <p className="mt-1 text-sm text-slate-500">{selectedLocation.city}</p>
+    <div className="flex h-full min-h-[300px] flex-col rounded-xl border border-[#262630] bg-[#17171B] shadow-xl">
+      <div className="border-b border-[#202027] bg-[#141417] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#C4622D]">
+              Selected Facility Node
+            </span>
+            <h2 className="mt-0.5 font-display text-base font-bold text-[#F4F4F5]">{selectedLocation.name}</h2>
+            <p className="flex items-center gap-1 mt-1 font-mono text-xs text-[#A1A1AA]">
+              <MapPin className="size-3 text-[#71717A]" />
+              {selectedLocation.city} Hub (Lat {selectedLocation.latitude.toFixed(2)}, Lon {selectedLocation.longitude.toFixed(2)})
+            </p>
+          </div>
+          <span className="font-mono text-xs font-bold text-[#F4F4F5] bg-[#1C1C21] px-2.5 py-1 rounded border border-[#262630]">
+            {selectedLocation.utilization.toFixed(1)}% Load
+          </span>
+        </div>
+
+        <div className="mt-3">
+          <ProgressBar value={selectedLocation.utilization} size="sm" />
+        </div>
+
         {relatedWarehouseCount > 0 ? (
-          <p className="mt-2 text-xs text-violet-700">
-            {relatedWarehouseCount} related warehouse{relatedWarehouseCount === 1 ? '' : 's'} highlighted on map
+          <p className="mt-2.5 inline-flex items-center gap-1.5 rounded border border-[#262630] bg-[#1C1C21] px-2 py-0.5 font-mono text-[11px] text-[#A1A1AA]">
+            <Split className="size-3 text-[#C4622D]" />
+            {relatedWarehouseCount} partner warehouse{relatedWarehouseCount === 1 ? '' : 's'} linked in multi-hub split orders
           </p>
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading ? (
-          <div className="flex h-32 items-center justify-center text-slate-500">
-            <Loader2 className="size-6 animate-spin" aria-hidden="true" />
+          <div className="flex h-40 items-center justify-center text-[#71717A]">
+            <Loader2 className="size-6 animate-spin text-[#C4622D]" aria-hidden="true" />
           </div>
         ) : null}
 
         {isError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            <div className="flex items-center gap-2 font-medium text-red-900">
+          <div className="rounded-lg border border-[#C95555]/30 bg-[#C95555]/10 p-4 text-xs text-[#C95555]">
+            <div className="flex items-center gap-2 font-semibold">
               <AlertCircle className="size-4" aria-hidden="true" />
-              Unable to load allocations
+              Unable to load linked allocations
             </div>
           </div>
         ) : null}
 
         {!isLoading && !isError && allocations.length === 0 ? (
-          <div className="flex h-32 flex-col items-center justify-center text-center">
-            <History className="size-6 text-slate-400" aria-hidden="true" />
-            <p className="mt-2 text-sm text-slate-600">No allocations for this warehouse yet.</p>
+          <div className="flex h-40 flex-col items-center justify-center text-center">
+            <History className="size-6 text-[#71717A]" aria-hidden="true" />
+            <p className="mt-2 font-mono text-xs text-[#71717A]">
+              No recent fulfillment allocations for this hub.
+            </p>
           </div>
         ) : null}
 
         {!isLoading && !isError && allocations.length > 0 ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-              <Target className="size-3.5" aria-hidden="true" />
-              Related allocations ({allocations.length})
+          <>
+            <div className="flex items-center justify-between text-[11px] font-mono font-semibold uppercase tracking-wider text-[#71717A]">
+              <span className="flex items-center gap-1.5">
+                <Target className="size-3.5 text-[#71717A]" />
+                Allocated Shipments
+              </span>
+              <span className="font-mono text-[#A1A1AA]">{allocations.length} records</span>
             </div>
-            {allocations.map((allocation) => (
-              <AllocationListItem
-                key={allocation.id}
-                allocation={allocation}
-                onSelect={onSelectAllocation}
-              />
-            ))}
-          </div>
+            <div className="space-y-2.5">
+              {allocations.map((allocation) => (
+                <AllocationListItem
+                  key={allocation.id}
+                  allocation={allocation}
+                  onSelect={onSelectAllocation}
+                />
+              ))}
+            </div>
+          </>
         ) : null}
       </div>
     </div>
@@ -144,26 +187,29 @@ export function WarehouseAllocationsPanel({
 
 export function WarehouseMapLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-3 rounded-full bg-emerald-500" aria-hidden="true" />
-        Low utilization
+    <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-[#262630] bg-[#17171B] px-3 py-1.5 text-xs text-[#A1A1AA] shadow-xs">
+      <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#71717A] mr-1">
+        Legend:
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-3 rounded-full bg-amber-500" aria-hidden="true" />
-        Medium
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+        <span className="size-2 rounded-full bg-[#3FA66B]" aria-hidden="true" />
+        Low (&lt;65%)
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-3 rounded-full bg-red-500" aria-hidden="true" />
-        High
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+        <span className="size-2 rounded-full bg-[#D08A35]" aria-hidden="true" />
+        Medium (65-85%)
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="size-3 rounded-full bg-blue-600 ring-2 ring-blue-200" aria-hidden="true" />
-        Selected
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+        <span className="size-2 rounded-full bg-[#C95555]" aria-hidden="true" />
+        High (&gt;85%)
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className={cn('size-3 rounded-full bg-violet-500 ring-2 ring-violet-200')} aria-hidden="true" />
-        Related allocation
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+        <span className="size-2 rounded-full bg-[#C4622D] ring-2 ring-[#C4622D]/30" aria-hidden="true" />
+        Active Marker
+      </span>
+      <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+        <span className="size-2 rounded-full bg-[#71717A] ring-2 ring-[#71717A]/30" aria-hidden="true" />
+        Split Partner
       </span>
     </div>
   )

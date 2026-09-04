@@ -2,10 +2,13 @@ package com.aryan.fulfillx.service;
 
 import com.aryan.fulfillx.dto.response.OrdersByStatusResponseDto;
 import com.aryan.fulfillx.dto.response.ShippingCostTrendResponseDto;
+import java.time.LocalDate;
 
 public interface DashboardService {
 
     OrdersByStatusResponseDto getOrdersByStatus();
 
     ShippingCostTrendResponseDto getShippingCostTrend();
+
+    ShippingCostTrendResponseDto getShippingCostTrend(LocalDate startDate, LocalDate endDate);
 }

@@ -1,4 +1,4 @@
-import { CheckCircle2, Filter, Info, XCircle } from 'lucide-react'
+import { CheckCircle2, Filter, Info, Warehouse, XCircle } from 'lucide-react'
 
 import type { OptimizationReasoning, ReasoningDecision } from '../../types/optimization'
 import { cn } from '../../utils/cn'
@@ -7,93 +7,139 @@ type ReasoningTimelineProps = {
   reasoning: OptimizationReasoning[]
 }
 
-const decisionStyles: Record<
+const decisionConfig: Record<
   ReasoningDecision,
-  { label: string; icon: typeof CheckCircle2; badgeClass: string; dotClass: string }
+  {
+    label: string
+    icon: typeof CheckCircle2
+    badgeClass: string
+    cardClass: string
+    nodeClass: string
+    isDominant?: boolean
+  }
 > = {
   SELECTED: {
-    label: 'Selected',
+    label: 'Decision: Selected Candidate',
     icon: CheckCircle2,
-    badgeClass: 'bg-emerald-100 text-emerald-700',
-    dotClass: 'bg-emerald-500',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-500/20 font-bold',
+    cardClass: 'border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 shadow-xs ring-1 ring-emerald-500/10',
+    nodeClass: 'bg-emerald-600 text-white ring-4 ring-emerald-100',
+    isDominant: true,
   },
   REJECTED: {
-    label: 'Rejected',
+    label: 'Candidate Rejected',
     icon: XCircle,
-    badgeClass: 'bg-red-100 text-red-700',
-    dotClass: 'bg-red-500',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80',
+    cardClass: 'border-slate-200 bg-white/60 opacity-85 hover:opacity-100 transition-opacity',
+    nodeClass: 'bg-rose-500 text-white ring-2 ring-rose-100',
+    isDominant: false,
   },
   FILTERED: {
-    label: 'Filtered',
+    label: 'Filtered Out',
     icon: Filter,
-    badgeClass: 'bg-slate-100 text-slate-700',
-    dotClass: 'bg-slate-400',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+    cardClass: 'border-slate-200 bg-slate-50/50',
+    nodeClass: 'bg-slate-400 text-white ring-2 ring-slate-200',
+    isDominant: false,
   },
   INFO: {
-    label: 'Info',
+    label: 'Evaluation Step',
     icon: Info,
-    badgeClass: 'bg-blue-100 text-blue-700',
-    dotClass: 'bg-blue-500',
+    badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+    cardClass: 'border-slate-200 bg-white',
+    nodeClass: 'bg-indigo-600 text-white ring-2 ring-indigo-100',
+    isDominant: false,
   },
 }
 
 export function ReasoningTimeline({ reasoning }: ReasoningTimelineProps) {
   if (reasoning.length === 0) {
     return (
-      <section className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
-        <p className="text-sm text-slate-500">No reasoning entries returned for this optimization run.</p>
+      <section className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-2xs">
+        <p className="text-xs text-slate-500">No reasoning entries returned for this optimization run.</p>
       </section>
     )
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold text-slate-900">Reasoning Timeline</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Backend decision trail in chronological order.
+    <section className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+      <div className="mb-5 border-b border-slate-100 pb-3">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+          Optimization Decision Reasoning Trail
+        </h3>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Chronological solver audit trail showing candidate evaluation, constraint filtering, and selection rationale.
         </p>
       </div>
 
-      <ol className="relative space-y-0">
+      <ol className="relative space-y-0 pl-1">
         {reasoning.map((entry, index) => {
-          const style = decisionStyles[entry.decision] ?? decisionStyles.INFO
-          const Icon = style.icon
+          const config = decisionConfig[entry.decision] ?? decisionConfig.INFO
+          const Icon = config.icon
           const isLast = index === reasoning.length - 1
 
           return (
-            <li key={`${entry.decision}-${index}`} className="relative flex gap-4 pb-6 last:pb-0">
+            <li key={`${entry.decision}-${index}`} className="relative flex gap-4 pb-5 last:pb-0">
+              {/* Connector line */}
               {!isLast ? (
                 <span
-                  className="absolute left-[11px] top-6 h-[calc(100%-12px)] w-px bg-slate-200"
+                  className="absolute left-[13px] top-7 h-[calc(100%-12px)] w-0.5 bg-slate-200"
                   aria-hidden="true"
                 />
               ) : null}
 
+              {/* Step indicator node */}
               <span
-                className={cn('relative z-10 mt-1 size-[22px] shrink-0 rounded-full', style.dotClass)}
+                className={cn(
+                  'relative z-10 mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold shadow-2xs',
+                  config.nodeClass,
+                )}
                 aria-hidden="true"
-              />
+              >
+                {index + 1}
+              </span>
 
-              <div className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      style.badgeClass,
-                    )}
-                  >
-                    <Icon className="size-3.5" aria-hidden="true" />
-                    {style.label}
-                  </span>
-                  <span className="text-xs text-slate-500">Step {index + 1}</span>
+              {/* Content card */}
+              <div
+                className={cn(
+                  'min-w-0 flex-1 rounded-xl border p-4 transition-all',
+                  config.cardClass,
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-semibold',
+                        config.badgeClass,
+                      )}
+                    >
+                      <Icon className="size-3.5" aria-hidden="true" />
+                      {config.label}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      Step {index + 1} of {reasoning.length}
+                    </span>
+                  </div>
+
+                  {entry.warehouseName ? (
+                    <span className="inline-flex items-center gap-1 rounded bg-slate-100/90 px-2 py-0.5 text-xs font-medium text-slate-700">
+                      <Warehouse className="size-3 text-slate-500" />
+                      {entry.warehouseName}
+                    </span>
+                  ) : null}
                 </div>
 
-                <p className="mt-2 text-sm text-slate-800">{entry.message}</p>
-
-                {entry.warehouseName ? (
-                  <p className="mt-2 text-xs text-slate-500">Warehouse: {entry.warehouseName}</p>
-                ) : null}
+                <p
+                  className={cn(
+                    'mt-2.5 text-sm leading-relaxed',
+                    config.isDominant
+                      ? 'font-semibold text-slate-900'
+                      : 'text-slate-700',
+                  )}
+                >
+                  {entry.message}
+                </p>
               </div>
             </li>
           )

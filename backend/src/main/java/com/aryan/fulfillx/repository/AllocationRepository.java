@@ -2,6 +2,7 @@ package com.aryan.fulfillx.repository;
 
 import com.aryan.fulfillx.entity.Allocation;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -86,4 +87,17 @@ public interface AllocationRepository extends JpaRepository<Allocation, UUID>, J
             LIMIT 30
             """, nativeQuery = true)
     List<Object[]> findShippingCostTrend();
+
+    @Query(value = """
+            SELECT CAST(created_at AS date) AS trend_date,
+                   COALESCE(AVG(shipping_cost), 0) AS average_shipping_cost,
+                   COUNT(*) AS allocation_count
+            FROM allocations
+            WHERE created_at >= :startInstant AND created_at < :endInstant
+            GROUP BY CAST(created_at AS date)
+            ORDER BY trend_date ASC
+            """, nativeQuery = true)
+    List<Object[]> findShippingCostTrendBetween(
+            @Param("startInstant") Instant startInstant,
+            @Param("endInstant") Instant endInstant);
 }

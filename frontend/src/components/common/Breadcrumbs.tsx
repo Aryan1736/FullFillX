@@ -18,12 +18,12 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
   }
 
   return (
-    <nav aria-label="Breadcrumb" className={cn('text-sm', className)}>
-      <ol className="flex flex-wrap items-center gap-1.5 text-slate-500">
+    <nav aria-label="Breadcrumb" className={cn('text-xs font-mono', className)}>
+      <ol className="flex flex-wrap items-center gap-1.5 text-[#71717A]">
         <li>
           <Link
             to={paths.dashboard}
-            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:text-[#F4F4F5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#C4622D]"
             aria-label="Dashboard home"
           >
             <Home className="size-3.5" aria-hidden="true" />
@@ -34,16 +34,16 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
 
           return (
             <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
-              <ChevronRight className="size-3.5 text-slate-400" aria-hidden="true" />
+              <ChevronRight className="size-3 text-[#262630]" aria-hidden="true" />
               {item.path && !isLast ? (
                 <Link
                   to={item.path}
-                  className="rounded-md px-1 py-0.5 font-medium transition-colors hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="rounded px-1 py-0.5 text-[#A1A1AA] transition-colors hover:text-[#F4F4F5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#C4622D]"
                 >
                   {item.label}
                 </Link>
               ) : (
-                <span className="font-medium text-slate-900" aria-current="page">
+                <span className="font-semibold text-[#F4F4F5]" aria-current="page">
                   {item.label}
                 </span>
               )}

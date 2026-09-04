@@ -11,19 +11,19 @@ import type {
   OrderStatusCount,
 } from '../types/dashboard'
 
-const INVENTORY_COLORS = {
-  inStock: '#10b981',
-  lowStock: '#f59e0b',
-  outOfStock: '#ef4444',
+export const INVENTORY_COLORS = {
+  inStock: '#16A34A',
+  lowStock: '#D97706',
+  outOfStock: '#DC2626',
 } as const
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#6366f1',
-  ALLOCATED: '#0ea5e9',
-  FULFILLING: '#8b5cf6',
-  SHIPPED: '#f59e0b',
-  DELIVERED: '#10b981',
-  CANCELLED: '#ef4444',
+export const STATUS_COLORS: Record<string, string> = {
+  PENDING: '#4F46E5',
+  ALLOCATED: '#0F766E',
+  FULFILLING: '#6366F1',
+  SHIPPED: '#D97706',
+  DELIVERED: '#16A34A',
+  CANCELLED: '#DC2626',
 }
 
 const MOCK_DASHBOARD_DATA: DashboardData = {
@@ -84,6 +84,14 @@ const MOCK_DASHBOARD_DATA: DashboardData = {
     { status: 'DELIVERED', count: 5 },
     { status: 'CANCELLED', count: 2 },
   ],
+  inventoryStatus: {
+    totalAvailableQuantity: 42000,
+    totalReservedQuantity: 5200,
+    totalQuantity: 47200,
+    inventoryRecordCount: 20,
+    outOfStockCount: 6,
+    lowStockCount: 12,
+  },
 }
 
 function buildInventoryDistribution(
@@ -134,6 +142,7 @@ function buildDashboardData(
     ),
     shippingCostTrend: shippingCostTrend.trend,
     ordersByStatus: withStatusColors(ordersByStatus.statuses),
+    inventoryStatus,
   }
 }
 

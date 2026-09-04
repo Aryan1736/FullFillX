@@ -118,6 +118,9 @@ public class GlobalExceptionHandler {
         if (exMsg.contains("uk_allocations_order_id")
                 || (exMsg.contains("allocations") && exMsg.contains("order_id"))) {
             message = "An allocation already exists for this customer order";
+        } else if (exMsg.toLowerCase().contains("allocation_items")
+                || exMsg.toLowerCase().contains("fk_allocation")) {
+            message = "Warehouse cannot be deleted because it is referenced by existing allocations";
         }
         return buildErrorResponse(
                 HttpStatus.CONFLICT,

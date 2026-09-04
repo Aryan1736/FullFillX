@@ -13,9 +13,9 @@ export function LoadingSpinner({ label = 'Loading', className }: LoadingSpinnerP
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className={cn('flex items-center justify-center gap-2 text-sm text-slate-600', className)}
+      className={cn('flex items-center justify-center gap-2 font-mono text-xs text-[#A1A1AA]', className)}
     >
-      <Loader2 className="size-5 animate-spin text-indigo-600" aria-hidden="true" />
+      <Loader2 className="size-4 animate-spin text-[#C4622D]" aria-hidden="true" />
       <span>{label}</span>
     </div>
   )

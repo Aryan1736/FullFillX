@@ -1,53 +1,55 @@
-import { BarChart3, TrendingUp } from 'lucide-react'
+import { useState } from 'react'
 
-import { PageHeader } from '../components/common/PageHeader'
-import {
-  InventoryDistributionChart,
-  OrdersByStatusChart,
-  ShippingCostTrendChart,
-  WarehouseUtilizationChart,
-} from '../components/dashboard/DashboardCharts'
-import {
-  DashboardEmptyState,
-  DashboardErrorState,
-  DashboardSkeleton,
-} from '../components/dashboard/DashboardStates'
-import { KpiCard } from '../components/dashboard/KpiCard'
+import { AnalyticsHeader } from '../components/analytics/AnalyticsHeader'
+import { AnalyticsSkeleton } from '../components/analytics/AnalyticsSkeletons'
+import { AnalyticsEmptyState, AnalyticsErrorState } from '../components/analytics/AnalyticsStates'
+import { ExecutivePerformanceStrip } from '../components/analytics/ExecutivePerformanceStrip'
+import { InventoryHealthBreakdown } from '../components/analytics/InventoryHealthBreakdown'
+import { OperationalSignals } from '../components/analytics/OperationalSignals'
+import { OrderOutcomeDistribution } from '../components/analytics/OrderOutcomeDistribution'
+import { ShippingCostTrendSection } from '../components/analytics/ShippingCostTrendSection'
+import { WarehouseUtilizationRanking } from '../components/analytics/WarehouseUtilizationRanking'
 import { useDashboard } from '../hooks/useDashboard'
-import {
-  formatCompactNumber,
-  formatCurrency,
-  formatHours,
-  formatPercent,
-  isDashboardEmpty,
-} from '../services/dashboardService'
+import { type AnalyticsTimeRange, useShippingCostTrend } from '../hooks/useShippingCostTrend'
+import { isDashboardEmpty } from '../services/dashboardService'
 
 export function AnalyticsPage() {
+  const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>('30D')
   const { data: result, isLoading, isError, isMock, refetch } = useDashboard()
+  const {
+    data: trendResult,
+    startDate,
+    endDate,
+    isLoading: isTrendLoading,
+    isFetching: isTrendFetching,
+  } = useShippingCostTrend(timeRange)
 
   if (isLoading) {
     return (
-      <div>
-        <PageHeader
-          title="Analytics"
-          description="Review fulfillment metrics, cost trends, and operational insights to optimize your network."
+      <div className="space-y-12 pb-12">
+        <AnalyticsHeader
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          startDate={startDate}
+          endDate={endDate}
+          isMock={isMock}
         />
-        <DashboardSkeleton />
+        <AnalyticsSkeleton />
       </div>
     )
   }
 
   if (isError || !result) {
     return (
-      <div>
-        <PageHeader
-          title="Analytics"
-          description="Review fulfillment metrics, cost trends, and operational insights to optimize your network."
+      <div className="space-y-12 pb-12">
+        <AnalyticsHeader
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          startDate={startDate}
+          endDate={endDate}
+          isMock={isMock}
         />
-        <DashboardErrorState
-          message="Unable to load analytics data. Please try again."
-          onRetry={() => void refetch()}
-        />
+        <AnalyticsErrorState onRetry={() => void refetch()} />
       </div>
     )
   }
@@ -56,67 +58,72 @@ export function AnalyticsPage() {
 
   if (isDashboardEmpty(data)) {
     return (
-      <div>
-        <PageHeader
-          title="Analytics"
-          description="Review fulfillment metrics, cost trends, and operational insights to optimize your network."
+      <div className="space-y-12 pb-12">
+        <AnalyticsHeader
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          startDate={startDate}
+          endDate={endDate}
+          isMock={isMock}
         />
-        <DashboardEmptyState />
+        <AnalyticsEmptyState />
       </div>
     )
   }
 
-  const { kpis } = data
+  const trendData = trendResult?.trend ?? data.shippingCostTrend
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Analytics"
-        description="Review fulfillment metrics, cost trends, and operational insights to optimize your network."
+    <div className="relative space-y-12 sm:space-y-16 pb-12">
+      {/* Subtle depth glow behind header area */}
+      <div
+        className="pointer-events-none absolute -top-16 left-1/2 -z-10 h-96 w-full max-w-4xl -translate-x-1/2 rounded-full bg-radial from-[#C4622D]/5 via-transparent to-transparent blur-2xl"
+        aria-hidden="true"
       />
 
-      {isMock ? (
-        <div
-          role="status"
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-        >
-          Backend unavailable. Showing demo analytics until the API is reachable.
-        </div>
-      ) : null}
+      {/* 1. Header with Eyebrow, Title & Time-Range Selector */}
+      <AnalyticsHeader
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
+        startDate={startDate}
+        endDate={endDate}
+        isMock={isMock}
+      />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          title="Order Volume"
-          value={formatCompactNumber(kpis.totalOrders)}
-          icon={BarChart3}
-          description="Total customer orders in the system"
+      {/* 2. Executive Performance Strip (Unified surface) */}
+      <ExecutivePerformanceStrip
+        kpis={data.kpis}
+        ordersByStatus={data.ordersByStatus}
+      />
+
+      {/* 3. Primary Analytics Grid (Left: Shipping Cost Trend, Right: Order Outcomes) */}
+      <section
+        aria-label="Primary Performance Analytics"
+        className="animate-section-3 grid grid-cols-1 gap-6 lg:grid-cols-2"
+      >
+        <ShippingCostTrendSection
+          data={trendData}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          isLoading={isTrendLoading || isTrendFetching}
         />
-        <KpiCard
-          title="Avg. Shipping Cost"
-          value={formatCurrency(kpis.averageShippingCost)}
-          icon={TrendingUp}
-          description="Mean cost per allocation"
-        />
-        <KpiCard
-          title="Warehouse Utilization"
-          value={formatPercent(kpis.warehouseUtilization)}
-          icon={TrendingUp}
-          description="Network-wide capacity usage"
-        />
-        <KpiCard
-          title="Average ETA"
-          value={formatHours(kpis.averageETA)}
-          icon={TrendingUp}
-          description="Mean estimated delivery time"
+        <OrderOutcomeDistribution data={data.ordersByStatus} />
+      </section>
+
+      {/* 4. Network Constraints & Stock Risk (Left: Warehouse Ranking, Right: Inventory Health) */}
+      <section
+        aria-label="Network and Inventory Constraints"
+        className="animate-section-4 grid grid-cols-1 gap-6 lg:grid-cols-2"
+      >
+        <WarehouseUtilizationRanking data={data.warehouseUtilization} />
+        <InventoryHealthBreakdown
+          distribution={data.inventoryDistribution}
+          inventoryStatus={data.inventoryStatus}
         />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <ShippingCostTrendChart data={data.shippingCostTrend} />
-        <OrdersByStatusChart data={data.ordersByStatus} />
-        <WarehouseUtilizationChart data={data.warehouseUtilization} />
-        <InventoryDistributionChart data={data.inventoryDistribution} />
-      </section>
+      {/* 5. Operational Signals Area (Derived strictly from real telemetry) */}
+      <OperationalSignals data={data} trendData={trendData} />
     </div>
   )
 }

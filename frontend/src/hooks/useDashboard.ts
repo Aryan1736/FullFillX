@@ -34,6 +34,7 @@ export function useDashboard() {
     isLoading,
     isError,
     isMock,
+    isFetching: liveQuery.isFetching || mockQuery.isFetching,
     refetch: liveQuery.refetch,
     error: liveQuery.error ?? mockQuery.error,
   }

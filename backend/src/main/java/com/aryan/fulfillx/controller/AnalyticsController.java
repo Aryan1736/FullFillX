@@ -11,15 +11,19 @@ import com.aryan.fulfillx.dto.response.WarehouseUtilizationResponseDto;
 import com.aryan.fulfillx.service.AnalyticsService;
 import com.aryan.fulfillx.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -92,9 +96,19 @@ public class AnalyticsController {
     }
 
     @GetMapping("/analytics/shipping-cost-trend")
-    @Operation(summary = "Get shipping cost trend", description = "Returns daily average shipping cost over recent allocations")
-    public ResponseEntity<ApiResponse<ShippingCostTrendResponseDto>> getShippingCostTrend() {
-        log.info("Fetching shipping cost trend");
-        return ResponseEntity.ok(ApiResponse.success(dashboardService.getShippingCostTrend()));
+    @Operation(
+            summary = "Get shipping cost trend",
+            description = "Returns daily average shipping cost over recent allocations or filtered by an optional date range")
+    public ResponseEntity<ApiResponse<ShippingCostTrendResponseDto>> getShippingCostTrend(
+            @Parameter(description = "Start date for trend range (ISO-8601 YYYY-MM-DD)", example = "2026-08-28")
+            @RequestParam(name = "startDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @Parameter(description = "End date for trend range (ISO-8601 YYYY-MM-DD)", example = "2026-09-04")
+            @RequestParam(name = "endDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate) {
+        log.info("Fetching shipping cost trend with startDate={}, endDate={}", startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(dashboardService.getShippingCostTrend(startDate, endDate)));
     }
 }

@@ -10,12 +10,15 @@ import static org.mockito.Mockito.when;
 
 import com.aryan.fulfillx.dto.response.ShippingCostTrendPointDto;
 import com.aryan.fulfillx.dto.response.ShippingCostTrendResponseDto;
+import com.aryan.fulfillx.exception.BadRequestException;
 import com.aryan.fulfillx.repository.AllocationRepository;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -255,5 +258,108 @@ class DashboardServiceImplTest {
                 .thenReturn(Collections.singletonList(new Object[]{date, Boolean.TRUE, 1L}));
 
         assertThrows(IllegalArgumentException.class, () -> dashboardService.getShippingCostTrend());
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with null dates delegates to default method")
+    void getShippingCostTrend_withNullDates_delegatesToDefault() {
+        LocalDate date = LocalDate.of(2026, 9, 1);
+        when(allocationRepository.findShippingCostTrend())
+                .thenReturn(Collections.singletonList(new Object[]{date, new BigDecimal("15.00"), 3L}));
+
+        ShippingCostTrendResponseDto response = dashboardService.getShippingCostTrend(null, null);
+
+        assertNotNull(response);
+        assertEquals(1, response.getTrend().size());
+        verify(allocationRepository).findShippingCostTrend();
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with valid range invokes findShippingCostTrendBetween with UTC boundaries")
+    void getShippingCostTrend_withValidRange_queriesBetweenInstants() {
+        LocalDate startDate = LocalDate.of(2026, 8, 28);
+        LocalDate endDate = LocalDate.of(2026, 9, 4);
+
+        Instant expectedStart = startDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant expectedEnd = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        List<Object[]> rows = List.of(
+                new Object[]{startDate, new BigDecimal("19.50"), 4L},
+                new Object[]{endDate, new BigDecimal("22.00"), 6L}
+        );
+
+        when(allocationRepository.findShippingCostTrendBetween(expectedStart, expectedEnd)).thenReturn(rows);
+
+        ShippingCostTrendResponseDto response = dashboardService.getShippingCostTrend(startDate, endDate);
+
+        assertNotNull(response);
+        assertEquals(2, response.getTrend().size());
+        assertEquals(startDate, response.getTrend().get(0).getDate());
+        assertEquals(new BigDecimal("19.50"), response.getTrend().get(0).getAverageShippingCost());
+        assertEquals(4L, response.getTrend().get(0).getAllocationCount());
+        assertEquals(endDate, response.getTrend().get(1).getDate());
+        assertEquals(new BigDecimal("22.00"), response.getTrend().get(1).getAverageShippingCost());
+        assertEquals(6L, response.getTrend().get(1).getAllocationCount());
+
+        verify(allocationRepository).findShippingCostTrendBetween(expectedStart, expectedEnd);
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with startDate after endDate throws BadRequestException")
+    void getShippingCostTrend_startDateAfterEndDate_throwsBadRequestException() {
+        LocalDate startDate = LocalDate.of(2026, 9, 5);
+        LocalDate endDate = LocalDate.of(2026, 9, 4);
+
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> dashboardService.getShippingCostTrend(startDate, endDate)
+        );
+
+        assertEquals("Start date cannot be after end date", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with startDate only throws BadRequestException")
+    void getShippingCostTrend_startDateOnly_throwsBadRequestException() {
+        LocalDate startDate = LocalDate.of(2026, 9, 1);
+
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> dashboardService.getShippingCostTrend(startDate, null)
+        );
+
+        assertEquals("Both startDate and endDate must be provided for range filtering", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with endDate only throws BadRequestException")
+    void getShippingCostTrend_endDateOnly_throwsBadRequestException() {
+        LocalDate endDate = LocalDate.of(2026, 9, 4);
+
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> dashboardService.getShippingCostTrend(null, endDate)
+        );
+
+        assertEquals("Both startDate and endDate must be provided for range filtering", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with range returns empty list when no data matches")
+    void getShippingCostTrend_emptyRangeResult_returnsEmptyList() {
+        LocalDate startDate = LocalDate.of(2026, 1, 1);
+        LocalDate endDate = LocalDate.of(2026, 1, 7);
+
+        Instant expectedStart = startDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant expectedEnd = endDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        when(allocationRepository.findShippingCostTrendBetween(expectedStart, expectedEnd))
+                .thenReturn(Collections.emptyList());
+
+        ShippingCostTrendResponseDto response = dashboardService.getShippingCostTrend(startDate, endDate);
+
+        assertNotNull(response);
+        assertNotNull(response.getTrend());
+        assertTrue(response.getTrend().isEmpty());
     }
 }

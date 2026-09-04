@@ -1,7 +1,47 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-bg-base: #0E0E10;
+  --color-surface-base: #17171B;
+  --color-surface-elevated: #1C1C21;
+  --color-border-base: #262630;
+  --color-border-subtle: #202027;
+
+  --color-text-primary: #F4F4F5;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted: #71717A;
+
+  --color-accent-terracotta: #C4622D;
+  --color-accent-terracotta-hover: #9E4A20;
+
+  --color-status-success: #3FA66B;
+  --color-status-warning: #D08A35;
+  --color-status-danger: #C95555;
+}
+
+:root {
+  --background: #0E0E10;
+  --surface: #17171B;
+  --surface-elevated: #1C1C21;
+  --border: #262630;
+  --border-subtle: #202027;
+
+  --text-primary: #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+
+  --accent: #C4622D;
+  --accent-hover: #9E4A20;
+
+  --success: #3FA66B;
+  --warning: #D08A35;
+  --danger: #C95555;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
@@ -10,47 +50,153 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #0f172a;
+  color: var(--text-primary);
+  background-color: var(--background);
 }
 
 #root {
   min-height: 100vh;
 }
 
+/* Accessibility: terracotta focus-visible outline */
 :focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
+/* Universal Form / Input consistency */
+input[type='search'],
+input[type='text'],
+input[type='number'],
+input[type='email'],
+select,
+textarea {
+  transition: border-color 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
+}
+
+input[type='search']:focus,
+input[type='text']:focus,
+input[type='number']:focus,
+input[type='email']:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Custom dark crisp scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a48;
+}
+
+/* Typography helper classes */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Section entrance animations with standard easing */
+@keyframes section-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-section-1 {
+  animation: section-fade-in 0.6s var(--ease-standard) forwards;
+}
+
+.animate-section-2 {
+  animation: section-fade-in 0.6s var(--ease-standard) 0.08s forwards;
+  opacity: 0;
+}
+
+.animate-section-3 {
+  animation: section-fade-in 0.6s var(--ease-standard) 0.16s forwards;
+  opacity: 0;
+}
+
+.animate-section-4 {
+  animation: section-fade-in 0.6s var(--ease-standard) 0.24s forwards;
+  opacity: 0;
+}
+
+.animate-section-5 {
+  animation: section-fade-in 0.6s var(--ease-standard) 0.32s forwards;
+  opacity: 0;
+}
+
+.animate-section-6 {
+  animation: section-fade-in 0.6s var(--ease-standard) 0.40s forwards;
+  opacity: 0;
+}
+
+/* Standardized Button Tokens */
+.btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+  transition: all 0.2s var(--ease-standard);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  transition: all 0.2s var(--ease-standard);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--surface-elevated);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+}
+
+/* Quietly premium interactive card hover */
+.interactive-card {
+  transition: transform 0.25s var(--ease-standard),
+              box-shadow 0.25s var(--ease-standard),
+              border-color 0.25s var(--ease-standard),
+              background-color 0.25s var(--ease-standard);
+}
+
+.interactive-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(196, 98, 45, 0.4);
+}
+
 @keyframes skeleton-pulse {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.45;
-  }
-}
-
-@keyframes toast-enter {
-  from {
-    opacity: 0;
-    transform: translateY(0.75rem) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toast-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(0.5rem) scale(0.98);
+    opacity: 0.35;
   }
 }
 
@@ -58,24 +204,51 @@ body {
   animation: skeleton-pulse 1.8s ease-in-out infinite;
 }
 
-.animate-toast-enter {
-  animation: toast-enter 0.25s ease-out forwards;
-}
-
-.animate-toast-exit {
-  animation: toast-exit 0.2s ease-in forwards;
-}
-
+/* Leaflet maps integration */
 .leaflet-container {
   font-family: inherit;
   z-index: 0;
 }
 
 .leaflet-popup-content-wrapper {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
 }
 
 .leaflet-popup-content {
   margin: 12px 14px;
   line-height: 1.4;
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+
+  .interactive-card:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  button:hover {
+    transform: none !important;
+  }
+
+  .animate-section-1,
+  .animate-section-2,
+  .animate-section-3,
+  .animate-section-4,
+  .animate-section-5,
+  .animate-section-6 {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
 }

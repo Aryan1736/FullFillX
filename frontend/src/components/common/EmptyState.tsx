@@ -22,15 +22,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-10',
+        'rounded-xl border border-dashed border-[#262630] bg-[#17171B] p-8 text-center shadow-xl sm:p-10 text-[#F4F4F5]',
         className,
       )}
     >
-      <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors">
-        <Icon className="size-6" aria-hidden="true" />
+      <div className="mx-auto flex size-12 items-center justify-center rounded-xl border border-[#262630] bg-[#1C1C21] text-[#71717A]">
+        <Icon className="size-6 text-[#C4622D]" aria-hidden="true" />
       </div>
-      <h2 className="mt-4 text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">{description}</p>
+      <h2 className="mt-4 font-display text-base font-bold tracking-tight text-[#F4F4F5]">{title}</h2>
+      <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-[#A1A1AA]">{description}</p>
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   )

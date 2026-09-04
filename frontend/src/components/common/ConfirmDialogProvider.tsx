@@ -1,7 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { Button } from './Button'
 import { cn } from '../../utils/cn'
 
 export type ConfirmDialogOptions = {
@@ -80,7 +79,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-[1px] transition-opacity"
+            className="absolute inset-0 bg-[#0E0E10]/80 backdrop-blur-xs transition-opacity"
             aria-label="Close dialog"
             onClick={() => closeDialog(false)}
           />
@@ -90,37 +89,49 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
             aria-describedby="confirm-dialog-description"
-            className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl transition-all animate-toast-enter"
+            className="relative w-full max-w-md rounded-xl border border-[#262630] bg-[#17171B] p-6 shadow-2xl transition-all animate-toast-enter"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3.5">
               <div
                 className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-full',
-                  dialog.variant === 'danger' ? 'bg-red-100 text-red-600' : 'bg-indigo-100 text-indigo-600',
+                  'flex size-10 shrink-0 items-center justify-center rounded-lg border',
+                  dialog.variant === 'danger'
+                    ? 'border-[#C95555]/30 bg-[#C95555]/15 text-[#C95555]'
+                    : 'border-[#C4622D]/30 bg-[#C4622D]/15 text-[#C4622D]',
                 )}
               >
                 <AlertTriangle className="size-5" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 id="confirm-dialog-title" className="text-lg font-semibold tracking-tight text-slate-900">
+                <h2 id="confirm-dialog-title" className="font-display text-base font-bold tracking-tight text-[#F4F4F5]">
                   {dialog.title}
                 </h2>
-                <p id="confirm-dialog-description" className="mt-2 text-sm leading-relaxed text-slate-600">
+                <p id="confirm-dialog-description" className="mt-2 text-xs leading-relaxed text-[#A1A1AA]">
                   {dialog.message}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="secondary" onClick={() => closeDialog(false)}>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end border-t border-[#202027] pt-4">
+              <button
+                type="button"
+                onClick={() => closeDialog(false)}
+                className="rounded border border-[#262630] bg-[#1C1C21] px-4 py-2 font-mono text-xs font-semibold text-[#A1A1AA] transition-colors hover:border-[#71717A] hover:text-[#F4F4F5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#C4622D]"
+              >
                 {dialog.cancelLabel}
-              </Button>
-              <Button
-                variant={dialog.variant === 'danger' ? 'danger' : 'primary'}
+              </button>
+              <button
+                type="button"
                 onClick={() => closeDialog(true)}
+                className={cn(
+                  'rounded px-4 py-2 font-mono text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2',
+                  dialog.variant === 'danger'
+                    ? 'border border-[#C95555] bg-[#C95555] hover:bg-[#A84444] focus-visible:ring-[#C95555]'
+                    : 'border border-[#C4622D] bg-[#C4622D] hover:bg-[#9E4A20] focus-visible:ring-[#C4622D]',
+                )}
               >
                 {dialog.confirmLabel}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

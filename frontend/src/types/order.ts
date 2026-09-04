@@ -26,6 +26,7 @@ export type CustomerOrder = {
 export type CustomerOrderQueryParams = {
   page: number
   size: number
+  status?: OrderStatus
 }
 
 export type { PageResponse }

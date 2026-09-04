@@ -92,9 +92,19 @@ export async function fetchOrdersByStatus(): Promise<OrdersByStatus> {
   return unwrap(data)
 }
 
-export async function fetchShippingCostTrend(): Promise<ShippingCostTrend> {
-  const { data } = await api.get<ApiResponse<ShippingCostTrend>>('/analytics/shipping-cost-trend')
-  const trend = data.data.trend ?? []
+export type ShippingCostTrendParams = {
+  startDate?: string
+  endDate?: string
+}
+
+export async function fetchShippingCostTrend(
+  params?: ShippingCostTrendParams,
+): Promise<ShippingCostTrend> {
+  const { data } = await api.get<ApiResponse<ShippingCostTrend>>(
+    '/analytics/shipping-cost-trend',
+    { params },
+  )
+  const trend = data.data?.trend ?? []
 
   return {
     trend: trend.map((point) => ({

@@ -1,10 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertCircle, Loader2, RotateCcw, Sparkles } from 'lucide-react'
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Minus,
+  Package,
+  Plus,
+  RotateCcw,
+  SlidersHorizontal,
+  Sparkles,
+  User,
+} from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { useConfirmDialog } from '../common/ConfirmDialogProvider'
-import { Button } from '../common/Button'
 import { useToast } from '../common/ToastProvider'
 import type { Customer } from '../../types/customer'
 import type { Product } from '../../types/product'
@@ -16,8 +26,8 @@ const productLineSchema = z.object({
 })
 
 const optimizationFormSchema = z.object({
-  customerId: z.string().min(1, 'Select a customer'),
-  productLines: z.array(productLineSchema).min(1, 'Select at least one product'),
+  customerId: z.string().min(1, 'Select a customer destination'),
+  productLines: z.array(productLineSchema).min(1, 'Select at least one product to fulfill'),
 })
 
 type OptimizationFormSchema = z.infer<typeof optimizationFormSchema>
@@ -57,6 +67,7 @@ export function OptimizationForm({
 
   const productLines = watch('productLines')
   const selectedProductIds = new Set(productLines.map((line) => line.productId))
+  const totalQuantity = productLines.reduce((sum, line) => sum + line.quantity, 0)
 
   const toggleProduct = (productId: string) => {
     if (selectedProductIds.has(productId)) {
@@ -72,10 +83,11 @@ export function OptimizationForm({
   }
 
   const updateQuantity = (productId: string, quantity: number) => {
+    const validQty = Math.max(1, quantity)
     setValue(
       'productLines',
       productLines.map((line) =>
-        line.productId === productId ? { ...line, quantity: Math.max(1, quantity) } : line,
+        line.productId === productId ? { ...line, quantity: validQty } : line,
       ),
       { shouldValidate: true },
     )
@@ -87,163 +99,211 @@ export function OptimizationForm({
     }
 
     const confirmed = await confirm({
-      title: 'Reset simulation?',
-      message: 'This will clear the selected customer and products. Your current input will be lost.',
-      confirmLabel: 'Reset',
-      cancelLabel: 'Keep editing',
+      title: 'Reset simulation manifest?',
+      message: 'This will clear the selected customer destination and configured SKU quantities.',
+      confirmLabel: 'Reset Manifest',
+      cancelLabel: 'Keep Editing',
       variant: 'danger',
     })
 
     if (confirmed) {
       reset({ customerId: '', productLines: [] })
-      showToast('Simulation form reset.', { variant: 'info' })
+      showToast('Simulation manifest reset.', { variant: 'info' })
     }
   }
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md lg:p-6"
+      className="flex flex-col rounded-xl border border-[#262630] bg-[#17171B] p-5 shadow-sm"
     >
-      <div>
-        <h2 className="text-lg font-semibold text-slate-900">Simulation Input</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Choose a customer destination and products to simulate fulfillment allocation.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="customerId" className="block text-sm font-medium text-slate-700">
-          Customer
-        </label>
-        <select
-          id="customerId"
-          disabled={isLoadingOptions || isSubmitting}
-          className={cn(
-            'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-50',
-            errors.customerId ? 'border-red-300' : 'border-slate-300',
-          )}
-          {...register('customerId')}
-        >
-          <option value="">Select a customer</option>
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.name} ({customer.city})
-            </option>
-          ))}
-        </select>
-        {errors.customerId ? (
-          <p className="text-sm text-red-600">{errors.customerId.message}</p>
+      <div className="flex items-center justify-between border-b border-[#202027] pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="size-4 text-[#C4622D]" />
+            <h3 className="font-display text-sm font-bold text-[#F4F4F5]">Custom Simulation Manifest</h3>
+          </div>
+          <p className="mt-0.5 text-xs text-[#71717A]">
+            Define customer destination and test hypothetical routing.
+          </p>
+        </div>
+        {productLines.length > 0 ? (
+          <span className="inline-flex items-center rounded border border-[#C4622D]/30 bg-[#C4622D]/15 px-2.5 py-0.5 text-xs font-semibold font-mono text-[#C4622D]">
+            {productLines.length} {productLines.length === 1 ? 'item' : 'items'} ({totalQuantity} units)
+          </span>
         ) : null}
       </div>
 
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm font-medium text-slate-700">Products</p>
-          <p className="text-xs text-slate-500">Select products and specify quantities for each.</p>
+      <div className="mt-5 space-y-5 flex-1">
+        {/* Customer Select */}
+        <div className="space-y-1.5">
+          <label htmlFor="customerId" className="flex items-center justify-between text-xs font-semibold text-[#A1A1AA]">
+            <span className="flex items-center gap-1.5">
+              <User className="size-3.5 text-[#71717A]" />
+              Customer Destination
+            </span>
+            <span className="text-[11px] font-mono text-[#71717A]">Required</span>
+          </label>
+          <div className="relative">
+            <select
+              id="customerId"
+              disabled={isLoadingOptions || isSubmitting}
+              className={cn(
+                'w-full appearance-none rounded-lg border bg-[#1C1C21] px-3.5 py-2.5 pr-10 text-xs font-medium text-[#F4F4F5] transition-colors focus:border-[#C4622D] focus:outline-hidden focus:ring-2 focus:ring-[#C4622D] disabled:cursor-not-allowed disabled:opacity-50',
+                errors.customerId ? 'border-[#C95555]' : 'border-[#262630] hover:border-[#71717A]',
+              )}
+              {...register('customerId')}
+            >
+              <option value="">Select destination customer...</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name} — {customer.city}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-3 size-4 text-[#71717A]" />
+          </div>
+          {errors.customerId ? (
+            <p className="flex items-center gap-1 text-xs text-[#C95555]">
+              <AlertCircle className="size-3.5" />
+              {errors.customerId.message}
+            </p>
+          ) : null}
         </div>
 
-        {isLoadingOptions ? (
-          <p className="text-sm text-slate-500">Loading products...</p>
-        ) : products.length === 0 ? (
-          <p className="text-sm text-slate-500">No products available.</p>
-        ) : (
-          <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3">
-            {products.map((product) => {
-              const isSelected = selectedProductIds.has(product.id)
-              const line = productLines.find((entry) => entry.productId === product.id)
-
-              return (
-                <div
-                  key={product.id}
-                  className={cn(
-                    'rounded-lg border px-3 py-3 transition-colors',
-                    isSelected ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200 bg-white',
-                  )}
-                >
-                  <label className="flex cursor-pointer items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      disabled={isSubmitting}
-                      onChange={() => toggleProduct(product.id)}
-                      className="mt-1 size-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-slate-900">{product.name}</span>
-                      <span className="block text-xs text-slate-500">{product.category}</span>
-                    </span>
-                  </label>
-
-                  {isSelected ? (
-                    <div className="mt-3 pl-7">
-                      <label
-                        htmlFor={`quantity-${product.id}`}
-                        className="mb-1 block text-xs font-medium text-slate-600"
-                      >
-                        Quantity
-                      </label>
-                      <input
-                        id={`quantity-${product.id}`}
-                        type="number"
-                        min={1}
-                        disabled={isSubmitting}
-                        value={line?.quantity ?? 1}
-                        onChange={(event) =>
-                          updateQuantity(product.id, Number.parseInt(event.target.value, 10) || 1)
-                        }
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              )
-            })}
+        {/* Product Picker */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#A1A1AA]">
+              <Package className="size-3.5 text-[#71717A]" />
+              Product Catalog Items
+            </label>
+            <span className="text-[11px] font-mono text-[#71717A]">
+              {products.length} products
+            </span>
           </div>
-        )}
 
-        {errors.productLines?.message ? (
-          <p className="text-sm text-red-600">{errors.productLines.message}</p>
-        ) : null}
+          {isLoadingOptions ? (
+            <div className="flex h-44 items-center justify-center rounded-lg border border-[#262630] bg-[#1C1C21]/60">
+              <span className="text-xs font-mono text-[#71717A] animate-pulse">Loading catalog options...</span>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="rounded-lg border border-[#262630] bg-[#1C1C21] p-4 text-center text-xs text-[#71717A]">
+              No products found in catalog.
+            </div>
+          ) : (
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+              {products.map((product) => {
+                const isSelected = selectedProductIds.has(product.id)
+                const line = productLines.find((entry) => entry.productId === product.id)
+                const currentQty = line?.quantity ?? 1
+
+                return (
+                  <div
+                    key={product.id}
+                    className={cn(
+                      'group rounded-lg border p-3 transition-all',
+                      isSelected
+                        ? 'border-[#C4622D]/60 bg-[#C4622D]/10'
+                        : 'border-[#262630] bg-[#1C1C21]/60 hover:border-[#71717A]',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleProduct(product.id)}
+                        disabled={isSubmitting}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-hidden"
+                      >
+                        <span
+                          className={cn(
+                            'flex size-5 shrink-0 items-center justify-center rounded border transition-colors',
+                            isSelected
+                              ? 'border-[#C4622D] bg-[#C4622D] text-white'
+                              : 'border-[#262630] bg-[#1C1C21] group-hover:border-[#71717A]',
+                          )}
+                        >
+                          {isSelected ? <Check className="size-3 stroke-[3]" /> : null}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-[#F4F4F5]">{product.name}</p>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            <span className="font-mono text-[10px] uppercase text-[#71717A]">
+                              {product.category}
+                            </span>
+                            <span className="font-mono text-[10px] text-[#71717A]">{product.weight} kg/unit</span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {isSelected ? (
+                        <div className="flex items-center gap-1 rounded border border-[#262630] bg-[#17171B] p-1">
+                          <button
+                            type="button"
+                            disabled={isSubmitting || currentQty <= 1}
+                            onClick={() => updateQuantity(product.id, currentQty - 1)}
+                            className="flex size-5 items-center justify-center rounded text-[#A1A1AA] hover:text-white disabled:opacity-30"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="size-2.5" />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            disabled={isSubmitting}
+                            value={currentQty}
+                            onChange={(e) =>
+                              updateQuantity(product.id, Number.parseInt(e.target.value, 10) || 1)
+                            }
+                            className="w-9 text-center font-mono text-xs font-bold text-[#F4F4F5] bg-transparent focus:outline-hidden"
+                            aria-label={`Quantity for ${product.name}`}
+                          />
+                          <button
+                            type="button"
+                            disabled={isSubmitting}
+                            onClick={() => updateQuantity(product.id, currentQty + 1)}
+                            className="flex size-5 items-center justify-center rounded text-[#A1A1AA] hover:text-white disabled:opacity-30"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="size-2.5" />
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {errors.productLines?.message ? (
+            <p className="flex items-center gap-1 text-xs text-[#C95555]">
+              <AlertCircle className="size-3.5" />
+              {errors.productLines.message}
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
+      <div className="mt-6 flex items-center gap-2.5 border-t border-[#202027] pt-4">
+        <button
           type="submit"
           disabled={isSubmitting || isLoadingOptions}
-          className="w-full sm:flex-1"
-          leftIcon={
-            isSubmitting ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Sparkles className="size-4" aria-hidden="true" />
-            )
-          }
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded border border-[#C4622D] bg-[#C4622D] px-4 py-2.5 font-mono text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#9E4A20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D] disabled:opacity-50"
         >
-          {isSubmitting ? 'Running Optimization…' : 'Run Optimization'}
-        </Button>
-        <Button
+          <Sparkles className="size-3.5" />
+          <span>{isSubmitting ? 'Simulating…' : 'Simulate Manifest'}</span>
+        </button>
+        <button
           type="button"
-          variant="secondary"
           disabled={isSubmitting || !isDirty}
           onClick={() => void handleReset()}
-          className="w-full sm:w-auto"
-          leftIcon={<RotateCcw className="size-4" aria-hidden="true" />}
+          className="inline-flex items-center gap-1.5 rounded border border-[#262630] bg-[#1C1C21] px-3.5 py-2.5 font-mono text-xs font-medium text-[#A1A1AA] transition-colors hover:border-[#71717A] hover:text-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D] disabled:opacity-50"
         >
-          Reset
-        </Button>
+          <RotateCcw className="size-3" />
+          <span>Reset</span>
+        </button>
       </div>
     </form>
-  )
-}
-
-export function OptimizationFormError({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-      <div className="flex items-start gap-2">
-        <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <p>{message}</p>
-      </div>
-    </div>
   )
 }

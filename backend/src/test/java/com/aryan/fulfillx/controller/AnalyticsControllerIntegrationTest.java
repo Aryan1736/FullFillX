@@ -15,6 +15,8 @@ import com.aryan.fulfillx.repository.AllocationRepository;
 import com.aryan.fulfillx.repository.CustomerOrderRepository;
 import com.aryan.fulfillx.service.DashboardService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -110,5 +112,94 @@ class AnalyticsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.trend").isArray());
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with valid date range returns filtered records")
+    void getShippingCostTrend_withDateRange_returnsFilteredRecords() throws Exception {
+        List<CustomerOrder> orders = customerOrderRepository.findAll();
+        CustomerOrder order = orders.get(0);
+
+        Allocation allocation = Allocation.builder()
+                .order(order)
+                .optimizationScore(new BigDecimal("88.0000"))
+                .shippingCost(new BigDecimal("25.00"))
+                .estimatedDeliveryHours(12)
+                .strategyName("WEIGHTED_GREEDY")
+                .build();
+
+        allocationRepository.save(allocation);
+        allocationRepository.flush();
+
+        LocalDate today = LocalDate.now();
+        String startDate = today.minusDays(7).format(DateTimeFormatter.ISO_DATE);
+        String endDate = today.format(DateTimeFormatter.ISO_DATE);
+
+        mockMvc.perform(get("/api/v1/analytics/shipping-cost-trend")
+                        .param("startDate", startDate)
+                        .param("endDate", endDate)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.trend").isArray())
+                .andExpect(jsonPath("$.data.trend", hasSize(1)))
+                .andExpect(jsonPath("$.data.trend[0].averageShippingCost").value(25.0))
+                .andExpect(jsonPath("$.data.trend[0].allocationCount").value(1));
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with date range outside records returns empty array")
+    void getShippingCostTrend_withDateRangeOutsideRecords_returnsEmpty() throws Exception {
+        List<CustomerOrder> orders = customerOrderRepository.findAll();
+        Allocation allocation = Allocation.builder()
+                .order(orders.get(0))
+                .optimizationScore(new BigDecimal("88.0000"))
+                .shippingCost(new BigDecimal("25.00"))
+                .estimatedDeliveryHours(12)
+                .strategyName("WEIGHTED_GREEDY")
+                .build();
+
+        allocationRepository.save(allocation);
+        allocationRepository.flush();
+
+        mockMvc.perform(get("/api/v1/analytics/shipping-cost-trend")
+                        .param("startDate", "2020-01-01")
+                        .param("endDate", "2020-01-07")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.trend").isArray())
+                .andExpect(jsonPath("$.data.trend", hasSize(0)));
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with startDate after endDate returns 400 Bad Request")
+    void getShippingCostTrend_startDateAfterEndDate_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/shipping-cost-trend")
+                        .param("startDate", "2026-09-10")
+                        .param("endDate", "2026-09-01")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Start date cannot be after end date"));
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with only startDate returns 400 Bad Request")
+    void getShippingCostTrend_onlyStartDate_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/shipping-cost-trend")
+                        .param("startDate", "2026-09-01")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Both startDate and endDate must be provided for range filtering"));
+    }
+
+    @Test
+    @DisplayName("getShippingCostTrend with invalid date format returns 400 Bad Request")
+    void getShippingCostTrend_invalidDateFormat_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/shipping-cost-trend")
+                        .param("startDate", "not-a-date")
+                        .param("endDate", "2026-09-01")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 }

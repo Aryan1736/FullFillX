@@ -1,49 +1,132 @@
-import { Bell, Menu, Search } from 'lucide-react'
+import { useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
+import { Menu, X } from 'lucide-react'
 
-type TopNavProps = {
-  onMenuClick: () => void
-}
+import { paths } from '../../routes/paths'
+import { cn } from '../../utils/cn'
 
-export function TopNav({ onMenuClick }: TopNavProps) {
+const NAV_ITEMS = [
+  { label: 'Dashboard', path: paths.dashboard },
+  { label: 'Orders', path: paths.orders },
+  { label: 'Warehouses', path: paths.warehouses },
+  { label: 'Inventory', path: paths.inventory },
+  { label: 'Optimization', path: paths.optimization },
+  { label: 'Allocations', path: paths.allocations },
+  { label: 'Analytics', path: paths.analytics },
+]
+
+export function TopNav() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur-sm lg:px-8">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <button
-          type="button"
-          className="rounded-md p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:hidden"
-          onClick={onMenuClick}
-          aria-label="Open navigation"
-          aria-expanded="false"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+    <header className="sticky top-0 z-40 border-b border-[#262630] bg-[#0E0E10]/95 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Left: Brand Identity */}
+        <div className="flex items-center gap-6">
+          <Link
+            to={paths.dashboard}
+            className="group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D] rounded"
+          >
+            <div className="flex size-7 items-center justify-center rounded bg-[#17171B] border border-[#262630] text-[#C4622D] transition-colors group-hover:border-[#C4622D]/60">
+              <span className="font-mono text-xs font-bold tracking-tight">FX</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-base font-bold tracking-tight text-[#F4F4F5]">
+                FulfillX
+              </span>
+              <span className="hidden font-mono text-[10px] uppercase tracking-widest text-[#71717A] md:inline">
+                Ops
+              </span>
+            </div>
+          </Link>
+        </div>
 
-        <div className="relative hidden min-w-0 flex-1 sm:block sm:max-w-md lg:max-w-lg">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-          <input
-            type="search"
-            placeholder="Search orders, warehouses, inventory…"
-            aria-label="Search"
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
-          />
+        {/* Center: Primary Navigation (Desktop) */}
+        <nav
+          className="hidden md:flex items-center gap-1"
+          aria-label="Primary Navigation"
+        >
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/'}
+              className={({ isActive }) =>
+                cn(
+                  'relative px-3 py-1.5 text-xs font-medium transition-colors duration-150 rounded',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D]',
+                  isActive
+                    ? 'text-[#F4F4F5] font-semibold'
+                    : 'text-[#A1A1AA] hover:text-[#F4F4F5]',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span>{item.label}</span>
+                  {isActive ? (
+                    <span
+                      className="absolute bottom-[-13px] left-3 right-3 h-[2px] bg-[#C4622D] rounded-full"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Right: Telemetry & Mobile Toggle */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 rounded border border-[#262630] bg-[#17171B] px-2.5 py-1 text-[11px] text-[#A1A1AA]">
+            <span className="size-1.5 rounded-full bg-[#3FA66B]" aria-hidden="true" />
+            <span className="font-mono text-[10px] font-medium tracking-wide text-[#71717A]">
+              REGION: IN-WEST
+            </span>
+            <span className="text-[#262630]" aria-hidden="true">|</span>
+            <span className="text-[#F4F4F5] font-medium">Telemetry Connected</span>
+          </div>
+
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded border border-[#262630] bg-[#17171B] text-[#A1A1AA] hover:text-[#F4F4F5] hover:border-[#71717A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D] md:hidden"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="rounded-md p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-        </button>
-        <div
-          className="hidden h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white sm:flex"
-          aria-hidden="true"
-        >
-          FX
+      {/* Mobile Collapsible Navigation */}
+      {mobileMenuOpen ? (
+        <div className="border-b border-[#262630] bg-[#17171B] px-4 py-3 md:hidden">
+          <nav className="flex flex-col space-y-1" aria-label="Mobile Navigation">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/'}
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center justify-between rounded px-3 py-2 text-xs font-medium transition-colors',
+                    isActive
+                      ? 'bg-[#1C1C21] text-[#F4F4F5] font-semibold border-l-2 border-[#C4622D]'
+                      : 'text-[#A1A1AA] hover:bg-[#1C1C21] hover:text-[#F4F4F5]',
+                  )
+                }
+              >
+                <span>{item.label}</span>
+                {item.path === paths.dashboard ? (
+                  <span className="font-mono text-[10px] text-[#71717A]">Root</span>
+                ) : null}
+              </NavLink>
+            ))}
+          </nav>
         </div>
-      </div>
+      ) : null}
     </header>
   )
 }

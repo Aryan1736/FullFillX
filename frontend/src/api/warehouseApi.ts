@@ -1,7 +1,9 @@
 import { api } from '../services/api'
 import type {
   ApiResponse,
+  CreateWarehouseRequest,
   PageResponse,
+  UpdateWarehouseRequest,
   Warehouse,
   WarehouseQueryParams,
 } from '../types/warehouse'
@@ -48,7 +50,7 @@ function buildQueryParams(params: WarehouseQueryParams): Record<string, string |
     query.active = params.active
   }
 
-  if (params.sort) {
+  if (params.sort && params.sort.field !== 'utilization') {
     query.sort = `${params.sort.field},${params.sort.direction}`
   }
 
@@ -80,3 +82,23 @@ export async function fetchWarehouseById(id: string): Promise<Warehouse> {
   const { data } = await api.get<ApiResponse<Record<string, unknown>>>(`/warehouses/${id}`)
   return mapWarehouse(data.data)
 }
+
+export async function createWarehouse(
+  payload: CreateWarehouseRequest,
+): Promise<Warehouse> {
+  const { data } = await api.post<ApiResponse<Record<string, unknown>>>('/warehouses', payload)
+  return mapWarehouse(data.data)
+}
+
+export async function updateWarehouse(
+  id: string,
+  payload: UpdateWarehouseRequest,
+): Promise<Warehouse> {
+  const { data } = await api.put<ApiResponse<Record<string, unknown>>>(`/warehouses/${id}`, payload)
+  return mapWarehouse(data.data)
+}
+
+export async function deleteWarehouse(id: string): Promise<void> {
+  await api.delete(`/warehouses/${id}`)
+}
+

@@ -1,6 +1,14 @@
-import { fetchWarehouseById, fetchWarehouses } from '../api/warehouseApi'
+import {
+  createWarehouse as createWarehouseApi,
+  deleteWarehouse as deleteWarehouseApi,
+  fetchWarehouseById,
+  fetchWarehouses,
+  updateWarehouse as updateWarehouseApi,
+} from '../api/warehouseApi'
 import type {
+  CreateWarehouseRequest,
   PageResponse,
+  UpdateWarehouseRequest,
   Warehouse,
   WarehouseQueryParams,
   WarehouseSort,
@@ -14,6 +22,18 @@ export class WarehouseService {
 
   async getWarehouseById(id: string): Promise<Warehouse> {
     return fetchWarehouseById(id)
+  }
+
+  async createWarehouse(payload: CreateWarehouseRequest): Promise<Warehouse> {
+    return createWarehouseApi(payload)
+  }
+
+  async updateWarehouse(id: string, payload: UpdateWarehouseRequest): Promise<Warehouse> {
+    return updateWarehouseApi(id, payload)
+  }
+
+  async deleteWarehouse(id: string): Promise<void> {
+    return deleteWarehouseApi(id)
   }
 
   async getDistinctCities(): Promise<string[]> {
@@ -68,12 +88,50 @@ export function formatDateTime(value: string): string {
   })
 }
 
+export function getUtilizationColor(percentage: number): string {
+  if (percentage >= 85) return '#C95555'
+  if (percentage >= 70) return '#D08A35'
+  return '#3FA66B'
+}
+
+export type UtilizationSemantic = {
+  label: 'HEALTHY' | 'ATTENTION' | 'CRITICAL'
+  color: string
+  bg: string
+  border: string
+}
+
+export function getUtilizationSemantic(percentage: number): UtilizationSemantic {
+  if (percentage >= 85) {
+    return {
+      label: 'CRITICAL',
+      color: '#C95555',
+      bg: 'rgba(201, 85, 85, 0.12)',
+      border: 'rgba(201, 85, 85, 0.28)',
+    }
+  }
+  if (percentage >= 70) {
+    return {
+      label: 'ATTENTION',
+      color: '#D08A35',
+      bg: 'rgba(208, 138, 53, 0.12)',
+      border: 'rgba(208, 138, 53, 0.28)',
+    }
+  }
+  return {
+    label: 'HEALTHY',
+    color: '#3FA66B',
+    bg: 'rgba(63, 166, 107, 0.12)',
+    border: 'rgba(63, 166, 107, 0.28)',
+  }
+}
+
 export function getUtilizationTone(value: number): 'low' | 'medium' | 'high' {
-  if (value >= 80) {
+  if (value >= 85) {
     return 'high'
   }
 
-  if (value >= 50) {
+  if (value >= 70) {
     return 'medium'
   }
 

@@ -16,4 +16,11 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: [
+      'recharts',
+      'leaflet',
+      'react-leaflet',
+    ],
+  },
 })

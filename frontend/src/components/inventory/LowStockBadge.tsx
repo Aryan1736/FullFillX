@@ -1,32 +1,48 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
-
+import type { StockStatus } from '../../types/inventory'
 import { cn } from '../../utils/cn'
 
 type LowStockBadgeProps = {
-  lowStock: boolean
+  status?: StockStatus
+  lowStock?: boolean
   className?: string
 }
 
-export function LowStockBadge({ lowStock, className }: LowStockBadgeProps) {
+export function LowStockBadge({ status, lowStock, className }: LowStockBadgeProps) {
+  // Resolve effective status
+  const resolvedStatus: StockStatus = status
+    ? status
+    : lowStock
+    ? 'LOW_STOCK'
+    : 'HEALTHY'
+
+  const config = {
+    HEALTHY: {
+      label: 'HEALTHY',
+      dotClass: 'bg-[#3FA66B]',
+      textClass: 'text-[#3FA66B]',
+    },
+    LOW_STOCK: {
+      label: 'LOW STOCK',
+      dotClass: 'bg-[#D08A35]',
+      textClass: 'text-[#D08A35]',
+    },
+    OUT_OF_STOCK: {
+      label: 'OUT OF STOCK',
+      dotClass: 'bg-[#C95555]',
+      textClass: 'text-[#C95555]',
+    },
+  }[resolvedStatus]
+
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-        lowStock ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700',
+        'inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold tracking-wider',
+        config.textClass,
         className,
       )}
     >
-      {lowStock ? (
-        <>
-          <AlertTriangle className="size-3" aria-hidden="true" />
-          Low stock
-        </>
-      ) : (
-        <>
-          <CheckCircle2 className="size-3" aria-hidden="true" />
-          In stock
-        </>
-      )}
+      <span className={cn('size-1.5 rounded-full shrink-0', config.dotClass)} aria-hidden="true" />
+      <span>{config.label}</span>
     </span>
   )
 }

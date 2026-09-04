@@ -98,4 +98,5 @@ export type DashboardData = {
   inventoryDistribution: InventoryDistributionSlice[]
   shippingCostTrend: ShippingCostTrendPoint[]
   ordersByStatus: OrderStatusCount[]
+  inventoryStatus?: InventoryStatus
 }

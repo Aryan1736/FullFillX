@@ -35,3 +35,11 @@ build/
 ### JVM Crash & Replay Dumps ###
 hs_err_pid*
 replay_pid*
+
+### Environment & Build Artifacts ###
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/

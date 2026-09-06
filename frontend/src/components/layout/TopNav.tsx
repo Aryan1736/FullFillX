@@ -27,9 +27,13 @@ export function TopNav() {
             to={paths.dashboard}
             className="group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4622D] rounded"
           >
-            <div className="flex size-7 items-center justify-center rounded bg-[#17171B] border border-[#262630] text-[#C4622D] transition-colors group-hover:border-[#C4622D]/60">
-              <span className="font-mono text-xs font-bold tracking-tight">FX</span>
-            </div>
+            <img
+              src="/img.png"
+              alt="FulfillX"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain shrink-0"
+            />
             <div className="flex items-baseline gap-2">
               <span className="font-display text-base font-bold tracking-tight text-[#F4F4F5]">
                 FulfillX

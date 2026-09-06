@@ -1,1 +1,0 @@
-- [FulfillX Replit runtime](fulfillx-replit-runtime.md) — run the Spring Boot backend directly with Replit-managed PostgreSQL and Java 21; Docker Compose is local-only.
